@@ -116,6 +116,9 @@ Some agent operations (e.g., research, planning) may take significant time. The 
 - **FR-015**: Server MUST support streaming responses for appropriate tools
 - **FR-016**: Server MUST implement request logging for debugging and auditing
 - **FR-017**: Server MUST handle concurrent client connections gracefully
+- **FR-020**: Tools that trigger system changes MUST produce outbound Context Protocol events (spec 001) — every MCP action that creates, modifies, or deletes data emits a corresponding `event.action` to the event log
+- **FR-021**: MCP tools calling outbound actions MUST await the corresponding inbound confirmation event before returning to the client (e.g., `session.start` waits for `session.started`)
+- **FR-022**: All outbound events from MCP tools MUST include `app: "com.osai.mcp-server"` for traceability
 - **FR-018**: Server MUST validate all inputs against tool schemas and return clear error messages
 - **FR-019**: Server MUST start and be ready within 1 second of launch
 
