@@ -113,6 +113,8 @@ Users can switch layout algorithms (force-directed, hierarchical, radial), adjus
 - **FR-012**: Graph MUST support export as PNG and SVG
 - **FR-013**: Graph MUST handle > 500 nodes with WebGL rendering (or canvas fallback when SVG performance degrades)
 - **FR-014**: Graph MUST support live updates — new nodes/edges appear with entrance animation without full re-render
+- **FR-015**: Graph MUST use colors from the design system node color palette (spec 059, --os-color-node-*) — theme-aware and colorblind-friendly
+- **FR-016**: Graph MUST use design system (spec 059) components for the search bar, filter panel, layout control, and action buttons
 
 ### Key Entities
 
@@ -143,7 +145,7 @@ Users can switch layout algorithms (force-directed, hierarchical, radial), adjus
 - Node size = proportional to page rank or degree centrality (capped min/max for readability)
 - Initial graph loads with top 100 nodes by degree centrality (configurable)
 - Large graphs (> 500 nodes) use canvas rendering for performance; SVG is too slow
-- Color palette is accessible (colorblind-friendly) and theme-aware (dark/light mode)
+- Color palette follows the design system (spec 059) — node type colors, dark/light/high-contrast modes, and colorblind-friendly palette are inherited
 - Node labels are truncated to 20 chars with ellipsis; full name in popover/tooltip
 - Layout physics parameters are exposed as sliders for advanced users
 - Graph data format: JSON node-link format (compatible with D3)

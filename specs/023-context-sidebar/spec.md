@@ -113,7 +113,7 @@ Users can share their current context as a snapshot — a portable, timestamped 
 - **FR-013**: Users MUST be able to generate and copy/export a context snapshot as structured markdown
 - **FR-014**: Context snapshot MUST include: timestamp, active app, open files, current project, last 10 events, and related entities
 - **FR-015**: Sidebar MUST support resize (collapsible to just icons, expandable to full width)
-- **FR-016**: Sidebar MUST support dark and light themes
+- **FR-016**: Sidebar MUST use the design system theme (spec 059) — dark, light, and high-contrast modes are inherited from the theme provider
 - **FR-017**: Sidebar MUST show loading state while context is being fetched
 
 ### Key Entities
@@ -142,7 +142,7 @@ Users can share their current context as a snapshot — a portable, timestamped 
 - Context summary built from the knowledge graph and current session state
 - Related context computed by the recommendation engine (spec 017)
 - Customization settings persisted in localStorage
-- Dark/light theme follows the app's theme
+- Dark/light/high-contrast themes are inherited from the design system (spec 059) — color tokens, typography, spacing, and component styles are provided by the system
 - Sidebar width: collapsible to 48px (icons only), default 320px, max 480px
 - Context snapshots are ephemeral (generated on demand, not persisted)
 - Source code lives at `ui/context-sidebar/` in the monorepo

@@ -118,6 +118,18 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 - **FR-015**: System MUST provide a `close()` method for graceful shutdown
 - **FR-016**: System MUST support in-memory SQLite for testing via `:memory:`
 
+#### Data Retention
+
+- **FR-017**: System MUST support configurable data retention by age (days) and total storage size (MB/GB)
+- **FR-018**: Default retention MUST be: keep all data (no automatic deletion) — user must explicitly enable pruning
+- **FR-019**: When enabled, pruning MUST run on a schedule (default: daily at 3 AM local time) and respect both age and size limits
+- **FR-020**: Pruning MUST use a two-phase approach: soft-delete (mark as `deleted_at` timestamp) then hard-delete after a configurable grace period (default 7 days)
+- **FR-021**: Before hard-delete, pruned events MUST be optionally archived to a compressed file (`~/.osai/archive/{date}-events.jsonl.zst`)
+- **FR-022**: Archive format MUST be newline-delimited JSON (JSONL) compressed with Zstandard — human-readable with standard tools
+- **FR-023**: Pruning MUST NOT delete sessions, projects, or entities — only events beyond the retention window
+- **FR-024**: System MUST provide a dry-run mode: `storage.previewPrune()` returns count of events that would be pruned without deleting anything
+- **FR-025**: Retention config MUST be exposed in Settings > Storage with readout: "1.2 GB used — 0 events pruned" and controls for age limit, size limit, and archive toggle
+
 ### Key Entities
 
 - **StoredEvent**: A database row representing a `ContextEvent`. Columns: `id`, `source`, `type`, `payload` (JSON string), `project`, `session`, `timestamp`, `created_at`.

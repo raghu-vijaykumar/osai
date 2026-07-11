@@ -115,6 +115,18 @@ The tray menu provides quick links to open the OSAI desktop dashboard, open the 
 - **FR-014**: App MUST handle daemon disconnection gracefully — show "Disconnected" icon and retry connection every 3 seconds
 - **FR-015**: App MUST have a settings accessible from the tray menu to configure notification preferences and auto-start
 
+#### Privacy Mode
+
+- **FR-016**: App MUST support a global Privacy Mode that pauses ALL capture (browser, IDE, file watcher, activity monitor) with a single action
+- **FR-017**: Privacy Mode MUST be toggleable via: tray menu ("Privacy Mode"), keyboard shortcut (configurable, default: Ctrl+Shift+P / Cmd+Shift+P), and command bar (`> privacy mode on`)
+- **FR-018**: When Privacy Mode is active, the tray icon MUST change to a distinctive "shield" or "eye-off" icon variant (not gray — clearly different from paused state)
+- **FR-019**: When Privacy Mode is active, a persistent notification MUST show: "Privacy Mode — capture paused. Resume in Settings or click the tray icon."
+- **FR-020**: Privacy Mode events MUST NOT be logged or stored — no `capture.paused` event is published (privacy from the system itself)
+- **FR-021**: App MUST support an auto-resume timer: user can set "Resume in 5 / 15 / 30 / 60 minutes" when enabling Privacy Mode
+- **FR-022**: When auto-resume timer expires, capture resumes silently and the tray icon returns to its normal state
+- **FR-023**: Privacy Mode state MUST NOT be persisted across app restarts — always resume in normal mode (the user chose to pause, the system respects that choice on each session)
+- **FR-024**: A Privacy Mode history log (local only, never synced) MUST track: `enabled_at`, `duration`, `source` (shortcut/tray/command bar), and `auto_resumed` (boolean)
+
 ### Key Entities
 
 - **TrayIcon**: The system tray/menu bar icon. States: `active` (green), `partial` (yellow), `paused` (gray), `disconnected` (red), `error` (red with exclamation).

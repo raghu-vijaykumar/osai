@@ -114,7 +114,7 @@ Users can create workflows that chain multiple agents: "Research topic X with Re
 - **FR-013**: Workflow steps MUST pass outputs as inputs to the next step
 - **FR-014**: Workflows MUST be savable, nameable, and re-runnable
 - **FR-015**: Agent panel MUST show loading state for message sending and response generation
-- **FR-016**: Agent panel MUST support dark and light themes
+- **FR-016**: Agent panel MUST use the design system theme (spec 059) — dark, light, and high-contrast modes are inherited from the theme provider
 - **FR-017**: Agent panel MUST support aborting an in-progress response
 
 ### Key Entities
@@ -143,7 +143,7 @@ Users can create workflows that chain multiple agents: "Research topic X with Re
 - Agents communicate with the knowledge engine via MCP protocol
 - Context is provided as a structured prompt prefix (recent events, current project, open files)
 - Conversations stored in the local storage layer (SQLite via the storage package)
-- Dark/light theme follows the app's theme
+- Dark/light/high-contrast themes are inherited from the design system (spec 059) — color tokens, typography, spacing, and component styles are provided by the system
 - Agent config is stored per-user in localStorage
 - Multi-agent orchestration runs client-side (step-by-step sequential)
 - Source code lives at `ui/agent-panel/` in the monorepo

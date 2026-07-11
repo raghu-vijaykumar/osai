@@ -109,7 +109,7 @@ The command bar supports user-configurable actions and plugins. Connectors and a
 - **FR-011**: Command bar MUST support extensible actions — agents and connectors can register commands via a plugin API
 - **FR-012**: Command bar MUST have an input debounce of 150ms to avoid excessive queries
 - **FR-013**: Command bar MUST show loading state while results are being fetched
-- **FR-014**: Command bar MUST support dark and light themes
+- **FR-014**: Command bar MUST use the design system theme (spec 059) — dark, light, and high-contrast modes are inherited from the theme provider
 
 ### Key Entities
 
@@ -136,7 +136,7 @@ The command bar supports user-configurable actions and plugins. Connectors and a
 - Uses `fuse.js` for client-side fuzzy search on cached indices
 - Natural language queries go to the recommendation engine (spec 017)
 - Recent searches stored in localStorage (up to 50 entries)
-- Dark/light theme follows the app's theme
+- Dark/light/high-contrast themes are inherited from the design system (spec 059) — color tokens, typography, spacing, and component styles are provided by the system
 - Command bar shortcut: Ctrl+K on Windows/Linux, Cmd+K on macOS
 - Plugin actions registered via a `commands.registerAction()` API at runtime
 - Source code lives at `ui/command-bar/` in the monorepo

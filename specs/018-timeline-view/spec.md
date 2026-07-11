@@ -110,6 +110,8 @@ Users switch between density modes: Compact (shows 2x more sessions per viewport
 - **FR-010**: Clicking an entity tag in any event MUST filter the timeline to that entity
 - **FR-011**: Timeline MUST display a live indicator for currently-active sessions with pulsing dot
 - **FR-012**: Timeline MUST render with optimized virtualization — only render visible rows (react-window or similar)
+- **FR-013**: Timeline MUST use components and tokens from the design system (spec 059) — all colors, spacing, typography, and interactive elements
+- **FR-014**: Timeline MUST support dark, light, and high-contrast themes via the theme provider (spec 059)
 
 ### Key Entities
 
@@ -141,4 +143,5 @@ Users switch between density modes: Compact (shows 2x more sessions per viewport
 - Date formatting uses `date-fns` or `Intl.DateTimeFormat` with the user's locale
 - Timezone: display in user's local timezone; store in UTC
 - Empty state: illustration + "No activity in this date range. Try adjusting your filters." message
+- Design system (spec 059) provides the theming engine, component library, and typography — dark/light/high-contrast modes, font scaling, and responsive behavior are inherited
 - Source code lives at `ui/timeline/` in the monorepo

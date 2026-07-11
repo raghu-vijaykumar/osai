@@ -115,8 +115,9 @@ The dashboard provides quick action buttons: "Start Session", "Add Note", "Captu
 - **FR-012**: Dashboard MUST show quick action buttons: Start Session, Add Note, Capture Screenshot, Export Report, Open Settings
 - **FR-013**: Dashboard MUST show loading state while data is being fetched
 - **FR-014**: Dashboard MUST show empty state for first-time users with a setup prompt
-- **FR-015**: Dashboard MUST support dark and light themes
-- **FR-016**: Dashboard widgets MUST be responsive — layout adjusts to sidebar open/closed and window resize
+- **FR-015**: Dashboard MUST use the design system theme (spec 059) — dark, light, and high-contrast modes are inherited from the theme provider
+- **FR-016**: Dashboard widgets MUST be responsive — layout adjusts to sidebar open/closed and window resize following design system breakpoints (spec 059)
+- **FR-017**: Dashboard MUST use design system (spec 059) components for cards, buttons, toasts, empty states, badges, and all interactive elements
 
 ### Key Entities
 
@@ -147,4 +148,5 @@ The dashboard provides quick action buttons: "Start Session", "Add Note", "Captu
 - Chart widget (Weekly Trend) uses a lightweight chart library (e.g., Chart.js or recharts)
 - Dashboard is the default route ("/") in the app router
 - Empty state shows illustration + "Start capturing your activity" CTA button
+- Design system (spec 059) provides the theming engine, component library, and typography — dark/light/high-contrast modes, font scaling, and responsive behavior are inherited
 - Source code lives at `ui/dashboard/` in the monorepo

@@ -130,6 +130,50 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 - **FR-028**: Test framework MUST support `--watch` mode for development (vitest --watch, cargo watch)
 - **FR-029**: All tests MUST be runnable in CI with a single root command: `pnpm ci:all` (full pipeline, exit on failure)
 
+### Cross-Cutting Infrastructure
+
+#### Error & Crash Monitoring (Sentry)
+
+- **FR-030**: System MUST integrate Sentry (free tier) for error and crash monitoring in both Rust and TypeScript runtimes
+- **FR-031**: Rust core MUST capture `panic!` and `Result::unwrap()` crashes via `sentry-rust` crate — breadcrumbs for file I/O, IPC, and SQLite operations
+- **FR-032**: React webview MUST capture `unhandledrejection` and `onerror` via `@sentry/react` — breadcrumbs for component rendering, API calls, user interactions
+- **FR-033**: Node.js sidecars MUST capture uncaught exceptions and promise rejections via `@sentry/node`
+- **FR-034**: Sentry MUST be opt-in — user consent collected at first launch; can be disabled in Settings at any time
+- **FR-035**: Sentry DSN MUST be configurable via environment variable `SENTRY_DSN` with a fallback to the OSAI project DSN
+- **FR-036**: Sentry events MUST NOT include event payload content or personal data — only metadata (error type, stack trace, breadcrumbs, performance spans)
+- **FR-037**: System MUST add breadcrumbs for: storage operations (store/query count), IPC calls, capture status toggles, feature flag evaluations
+
+#### Structured Logging
+
+- **FR-038**: System MUST output structured logs in JSON format — one line per log entry
+- **FR-039**: Log levels MUST be: `trace`, `debug`, `info`, `warn`, `error` — initial default: `info`
+- **FR-040**: Rust logging MUST use the `tracing` crate with a JSON formatter subscriber
+- **FR-041**: TypeScript logging MUST use a structured logger (e.g., `pino`) — console transport for development, file transport for production
+- **FR-042**: Log output MUST include: timestamp (ISO 8601), level, module/component, message, and structured context (event_id, session_id, source where applicable)
+- **FR-043**: Log files MUST be written to `~/.osai/logs/` with daily rotation and 30-day retention
+- **FR-044**: CLI tool MUST support `osai logs` command to view, filter (`--level`, `--module`), and tail (`--follow`) logs
+- **FR-045**: Log level MUST be configurable via environment variable `OSAI_LOG_LEVEL` and Settings UI
+
+#### Feature Flags
+
+- **FR-046**: System MUST implement a feature flag system with a configuration file at `~/.osai/features.json`
+- **FR-047**: Feature flags MUST support three states: `enabled`, `disabled`, `default` (uses the hardcoded default)
+- **FR-048**: Feature flags MUST be overridable via environment variable: `OSAI_FEATURE_{FLAG_NAME}=true|false`
+- **FR-049**: System MUST expose an API for runtime feature flag checks: `isFeatureEnabled('flag-name'): boolean`
+- **FR-050**: Feature flags MUST be used for gradual rollout of experimental features (e.g., nightly-only features)
+- **FR-051**: Feature flag configuration MUST be readable at Settings > Advanced > Feature Flags for debugging
+- **FR-052**: A list of all feature flags with descriptions and defaults MUST be documented in `docs/development/feature-flags.md`
+
+#### Secret Management
+
+- **FR-053**: System MUST use the OS-native keychain for storing secrets: Windows Credential Manager (`wincred`), macOS Keychain (`securityd`), Linux Secret Service (`libsecret`)
+- **FR-054**: Secrets stored in keychain include: LLM provider API keys (OpenAI, Anthropic, etc.), cloud sync credentials, E2EE keys
+- **FR-055**: System MUST provide a fallback encrypted file store at `~/.osai/secrets.enc` when keychain is unavailable (e.g., headless CI, some Linux DEs)
+- **FR-056**: Encryption for the fallback store MUST use AES-256-GCM with a key derived from a user-provided master password via Argon2id
+- **FR-057**: System MUST expose a `SecretStore` interface with methods: `set(key, value)`, `get(key)`, `delete(key)`, `list()` — abstracting keychain vs encrypted file
+- **FR-058**: Secrets MUST never be logged, printed to stdout, or included in Sentry breadcrumbs
+- **FR-059**: Secret access from Node.js sidecars MUST go through the Rust core via IPC — sidecars never access the keychain directly
+
 ### Key Entities
 
 - **Package**: An npm package under `packages/` or any top-level directory with a `package.json`. Named `@osai/<name>`.
@@ -137,6 +181,9 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 - **Workspace**: A pnpm workspace member directory. All packages are workspace members.
 - **Changeset**: A markdown file describing a version change, used by `@changesets/cli` for automated versioning.
 - **tsconfig.base.json**: Root TypeScript configuration extended by all packages via `extends`.
+- **LogEntry**: A structured log line. Attributes: timestamp, level, module, message, context (key-value pairs).
+- **FeatureFlag**: A configuration flag. Attributes: name, description, defaultValue, currentValue, overrides (env/file).
+- **SecretEntry**: A stored secret. Attributes: key (string), value (encrypted), createdAt, accessedAt.
 
 ## Success Criteria
 

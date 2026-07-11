@@ -110,6 +110,8 @@ The projects view includes a "Discover" section suggesting potential projects fr
 - **FR-010**: Projects view MUST include a "Discover" section showing suggested projects from orphan events with confidence scores
 - **FR-011**: Projects view MUST show "Related Projects" based on shared entities, sources, or temporal proximity
 - **FR-012**: Manual project operations (rename, merge) MUST be persisted and learned by the detection system
+- **FR-013**: Projects view MUST use components and tokens from the design system (spec 059) — all colors, spacing, typography, and interactive elements
+- **FR-014**: Projects view MUST support dark, light, and high-contrast themes via the theme provider (spec 059)
 
 ### Key Entities
 
@@ -140,4 +142,5 @@ The projects view includes a "Discover" section suggesting potential projects fr
 - Orphan events for Discover are events with no project assignment and confidence above 0.3
 - Learn more about manual corrections via the project_corrections table
 - Empty state: illustration + "No projects yet. Projects are auto-detected as you work." message
+- Design system (spec 059) provides the theming engine, component library, and typography — dark/light/high-contrast modes, font scaling, and responsive behavior are inherited
 - Source code lives at `ui/projects/` in the monorepo

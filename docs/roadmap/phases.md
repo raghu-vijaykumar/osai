@@ -9,13 +9,18 @@
 - [ ] Initialize monorepo (pnpm workspaces / turborepo)
 - [ ] Set up TypeScript config across packages
 - [ ] Define Context Protocol schemas (event types, envelopes, permissions)
-- [ ] Implement local storage layer (SQLite + vector store)
+- [ ] Implement local storage layer (SQLite + vector store) with data retention policy
 - [ ] Build basic event ingestion pipeline (CLI tool)
 - [ ] Write protocol SDK (publish / consume APIs)
 - [ ] Create `@kb-os/protocol` npm package
 - [ ] Create `@kb-os/storage` npm package
+- [ ] Integrate Sentry error monitoring (opt-in, Rust + TypeScript)
+- [ ] Implement structured JSON logging (tracing + pino, rotation, CLI viewer)
+- [ ] Implement feature flag system (file + env overrides)
+- [ ] Implement OS keychain secret management (wincred/macOS Keychain/libsecret + encrypted fallback)
 - [ ] Write architecture documentation
 - [ ] Write contributing guide
+- [ ] Create PR template, security policy, code of conduct
 
 ### Deliverables
 
@@ -23,6 +28,7 @@
 - Protocol schema definitions (typed)
 - CLI tool that can ingest and query events locally
 - Two npm packages published
+- Error monitoring, structured logging, feature flags, and secret management infrastructure
 
 ---
 
@@ -38,7 +44,7 @@
 - [ ] Build activity monitor — window focus tracking, idle detection
 - [ ] Implement event deduplication and batching
 - [ ] Add event buffering for offline resilience
-- [ ] Build status tray application (system tray icon + controls)
+- [ ] Build status tray application (system tray icon + controls + privacy mode)
 
 ### Deliverables
 
@@ -88,12 +94,17 @@
 - [ ] Build Agent Panel (background agent status, task management)
 - [ ] Build Context Sidebar (embeddable panel showing current context)
 - [ ] Build Dashboard (overview, stats, recent activity, active projects)
-- [ ] Implement dark/light theme
+- [ ] Implement design system (spec 059) — design tokens, theming engine, typography (Inter + JetBrains Mono), text size controls, shared component library, Lucide icon system, responsive breakpoints, motion principles, WCAG 2.1 AA accessibility
 - [ ] Add keyboard shortcuts throughout
+- [ ] Implement auto-update (GitHub Releases, code signing, channels, rollout, crash rollback)
+- [ ] Implement onboarding (inline tooltip sequence, contextual tips, replayable)
 
 ### Deliverables
 
-- Desktop app with all six views
+- Desktop app with all six views sharing a consistent design system
+- Design system (spec 059) — tokens, theming, typography, component library, accessibility
+- Auto-update mechanism with stable/beta/nightly channels
+- Onboarding flow for new users
 - Searchable, filterable timeline
 - Interactive knowledge graph visualization
 - Command bar with universal search
@@ -212,7 +223,7 @@
 - [ ] Improve offline-first reliability
 - [ ] Expand test coverage (unit, integration, E2E)
 - [ ] Security audit and penetration testing
-- [ ] Accessibility audit across all UIs
+- [ ] Accessibility audit across all UIs (against WCAG 2.1 AA baseline defined in spec 059)
 - [ ] Localization (i18n) support
 - [ ] Community PR review and maintenance
 
