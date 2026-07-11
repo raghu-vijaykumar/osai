@@ -101,7 +101,7 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 
 ### Functional Requirements
 
-- **FR-001**: System MUST use SQLite (via `better-sqlite3`) as the primary relational store
+- **FR-001**: System MUST use SQLite (via `rusqlite` in the Tauri Rust core) as the primary relational store
 - **FR-002**: System MUST automatically create the `events` table with columns: `id` (TEXT PK), `source` (TEXT), `type` (TEXT), `payload` (TEXT/JSON), `project` (TEXT), `session` (TEXT), `timestamp` (TEXT ISO 8601), `created_at` (TEXT)
 - **FR-003**: System MUST create indexes on `source`, `type`, `project`, `session`, and `timestamp` for query performance
 - **FR-004**: System MUST support JSON extraction queries on the `payload` column using SQLite's `json_extract()`
@@ -141,7 +141,8 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 
 ## Assumptions
 
-- SQLite version 3.40+ (WAL mode, JSON functions, FTS5) — built into Node.js 20 via `better-sqlite3`
+- SQLite version 3.40+ (WAL mode, JSON functions, FTS5) — via `rusqlite` crate in the Tauri Rust backend
+- In addition to the Rust core, a `@osai/storage` TypeScript package wraps SQLite via `better-sqlite3` for use in Node.js sidecars (knowledge engine, MCP server, agents)
 - Embedding model initially uses local `@xenova/transformers` (all-MiniLM-L6-v2, 384 dimensions)
 - Vector search is done in-process (brute-force cosine similarity) — no external vector DB for Phase 0
 - The `payload` column stores JSON text; SQLite JSON functions handle extraction

@@ -99,7 +99,7 @@ On first start, the watcher scans all watched directories and publishes the init
 
 ### Functional Requirements
 
-- **FR-001**: Service MUST use `chokidar` (Node.js) for cross-platform file system watching
+- **FR-001**: Service MUST use the `notify` crate (Rust) for cross-platform file system watching
 - **FR-002**: Service MUST support a list of directories to watch, configurable via config file
 - **FR-003**: Service MUST recursively watch all subdirectories within each configured path
 - **FR-004**: Service MUST publish `file.created` event when a new file appears with `path`, `size`, `mimeType`, `extension`
@@ -142,8 +142,8 @@ On first start, the watcher scans all watched directories and publishes the init
 
 ## Assumptions
 
-- `chokidar` is the file watching library (battle-tested, cross-platform, used by VSCode and webpack)
-- The service runs as a separate process from the main OSAI daemon (or as a managed child process)
+- The `notify` crate (Rust) is the file watching library (battle-tested, cross-platform, low overhead)
+- Built as a Rust crate within the Tauri core; runs in a background thread, not a separate process
 - Config file located at `~/.osai/config.json` under `watcher` key
 - On Linux, `fs.inotify.max_user_watches` sysctl may need adjustment — the watcher prints a warning if approaching the limit
 - `.git` directories are excluded by default since git events are captured by the VSCode extension

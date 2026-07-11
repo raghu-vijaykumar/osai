@@ -140,11 +140,11 @@ The user can configure which applications are tracked, disable title capture for
 
 ## Assumptions
 
-- Cross-platform support requires platform-specific native modules
-- On Windows, uses a Rust or Zig native addon for `GetForegroundWindow` / `GetWindowText` / `GetLastInputInfo` (or falls back to PowerShell polling)
-- On macOS, uses `osascript -e 'tell application "System Events" to get {name, title} of first process whose frontmost is true'` (or a Swift helper)
-- On Linux/X11, uses `xdotool getactivewindow getwindowname`; on Wayland this may require KWin D-Bus API or `wlr-foreign-toplevel-management`
-- Idle detection on Windows: `GetLastInputInfo`; macOS: `CGEventSourceSecondsSinceLastEventType`; Linux/X11: `xss` or `xidle`
+- Cross-platform support uses platform-specific Rust crates within the Tauri core
+- On Windows, uses the `windows` crate for `GetForegroundWindow` / `GetWindowText` / `GetLastInputInfo`
+- On macOS, uses the `core-foundation` and `core-graphics` crates for `NSWorkspace.shared.frontmostApplication` and `CGEventSourceSecondsSinceLastEventType`
+- On Linux/X11, uses the `x11` crate for `_NET_ACTIVE_WINDOW` and `xss` for idle detection; on Wayland, uses `wlr-foreign-toplevel-management` protocol or KWin D-Bus API
+- Idle detection: Windows via `windows` crate (`GetLastInputInfo`), macOS via `core-graphics` (`CGEventSourceSecondsSinceLastEventType`), Linux via `xss` or `ext-session-lock-v1`
 - The activity monitor process runs as a child of the main OSAI daemon
 - Window title is truncated to 200 characters
 - Application name is normalized (lowercased, `.app` extension stripped on macOS)

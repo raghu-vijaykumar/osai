@@ -136,7 +136,7 @@ Events can be grouped into sessions — contiguous periods of related activity (
 ## Assumptions
 
 - The initial implementation targets Node.js 20+ and browser environments (via bundling)
-- Storage is local SQLite via `better-sqlite3` for Node.js, with an in-memory fallback for browsers
+- Storage is local SQLite via `rusqlite` in the Tauri Rust core, or via `better-sqlite3` for Node.js sidecars (knowledge engine, MCP server). Browser environments use an in-memory fallback.
 - Event types use reverse-domain dot notation (e.g., `osai.url.visited`)
 - All timestamps are UTC ISO 8601 strings
 - The protocol will support optional fields for forward compatibility

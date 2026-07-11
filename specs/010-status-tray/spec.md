@@ -137,7 +137,7 @@ The tray menu provides quick links to open the OSAI desktop dashboard, open the 
 
 ## Assumptions
 
-- Built with Tauri (Rust backend + web frontend) for small binary size and native tray support, OR Electron with `electron-tray` for faster development
+- Built with Tauri (Rust backend + React webview) for small binary size and native tray support
 - On macOS, uses menu bar extra (NSStatusBar) instead of system tray
 - On Linux, uses libappindicator or StatusNotifierItem spec (KDE/GNOME)
 - Communicates with OSAI daemon via localhost HTTP (localhost:3487) or a Unix domain socket

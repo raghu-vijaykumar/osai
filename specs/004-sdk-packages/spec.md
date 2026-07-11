@@ -116,7 +116,7 @@ Each package has a README with installation, quick start, API reference, and lin
 ### Key Entities
 
 - **@osai/protocol**: Core protocol SDK. Zero runtime dependencies. Works in Node.js and browser. Exports: event types, validation, publish/consume APIs, schema registry, permissions.
-- **@osai/storage**: Storage SDK. Depends on `@osai/protocol`. Node.js only (uses `better-sqlite3`). Exports: `StorageAdapter`, initialization, query/search interfaces.
+- **@osai/storage**: Storage SDK. Depends on `@osai/protocol`. Node.js only (uses `better-sqlite3`). Exports: `StorageAdapter`, initialization, query/search interfaces. Note: The primary storage layer runs via `rusqlite` in the Tauri Rust core; this package provides storage access for Node.js sidecar processes (knowledge engine, MCP server, agent host).
 - **tsup**: Build tool that bundles TypeScript to ESM + CJS with type declarations in one step.
 
 ## Success Criteria

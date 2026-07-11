@@ -80,7 +80,7 @@
 
 ### Tasks
 
-- [ ] Scaffold desktop app (Electron / Tauri / Neutralino)
+- [ ] Scaffold desktop app (Tauri — Rust backend + React webview)
 - [ ] Build Timeline view (chronological activity feed, filtering, search)
 - [ ] Build Projects view (project list, detail, file association)
 - [ ] Build Graph View (interactive knowledge graph visualization)

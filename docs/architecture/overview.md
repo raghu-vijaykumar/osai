@@ -141,7 +141,7 @@ Exposes the knowledge graph as MCP tools and resources so any MCP-compatible AI 
 
 ### 6. UI Layer
 
-Native applications that present context to the user.
+Native applications that present context to the user. Built with Tauri (Rust backend + React webview).
 
 | App | Description |
 |-----|-------------|

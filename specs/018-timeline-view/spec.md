@@ -133,7 +133,7 @@ Users switch between density modes: Compact (shows 2x more sessions per viewport
 
 ## Assumptions
 
-- Timeline is part of the desktop app (Electron/Tauri), but could also be a web component
+- Timeline is part of the Tauri desktop app (Rust backend + React webview)
 - Virtualization library: `@tanstack/react-virtual` or `react-window`
 - UI framework: React with Tailwind CSS (consistent with other UI components)
 - Session data comes from the session detection API (spec 016)

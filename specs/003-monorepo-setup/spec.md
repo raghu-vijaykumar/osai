@@ -88,7 +88,7 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 ### Edge Cases
 
 - What happens when a package's dependency is not yet built (circular dependency)?
-- How are native modules (like `better-sqlite3`) handled during build and publish?
+- How are native modules (like `better-sqlite3` for Node.js sidecars) handled during build and publish?
 - What happens if `pnpm-lock.yaml` is out of date with `package.json`?
 - How does turborepo handle cache invalidation when config files change?
 - What happens when a package has both ESM and CJS builds?

@@ -145,10 +145,11 @@ Some agents depend on others. For example, the Recommendation Agent depends on t
 
 ## Assumptions
 
-- Built as a core system service (not an agent itself) using Node.js worker-threads or child_process
-- Each agent runs in its own isolated context (worker thread or process)
+- Built using the Tauri sidecar mechanism — Node.js processes spawned and managed by the Rust core
+- Each agent runs in its own isolated Node.js child process, spawned by the Rust scheduler
+- The Rust core monitors agent processes via IPC heartbeat (every 10 seconds)
 - Heartbeat via IPC message every 10 seconds
-- Resource monitoring via Node.js `process.cpuUsage()` and `process.memoryUsage()`
+- Resource monitoring via `sysinfo` crate (Rust) for the Tauri core, and Node.js `process.cpuUsage()` / `process.memoryUsage()` for agent sidecars`
 - Cron scheduling via `node-cron` or similar library
 - Rate limiting uses a shared token bucket
 - Agent state persisted to SQLite (via storage layer)
