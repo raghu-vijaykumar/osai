@@ -57,20 +57,40 @@ The project detail page includes a mini-timeline showing only sessions/events be
 
 ### User Story 4 - Project Management Actions (Priority: P2)
 
-Users can rename, merge, archive, and delete projects. Merge combines two projects into one. Archive hides from default list but preserves data. Delete removes the project association (events remain). Manual corrections are learned by the detection system.
+Users can rename, merge, split, reassign events, archive, pin/reorder, and delete projects. Merge combines two projects into one. Split moves a subset of events from one project to a new or existing project. Reassign moves individual events or batches between projects. Pin keeps important projects at the top. All operations produce outbound Context Protocol events in the event log. Manual corrections are fed back to the detection system (spec 015).
 
-**Why this priority**: Auto-detection isn't perfect. Users need control to organize projects as they see fit.
+**Why this priority**: Auto-detection isn't perfect. Users need full control to organize projects as they see fit.
 
-**Independent Test**: Rename "Untitled Project 3" to "Research: Knowledge Graphs". Archive an old project. Verify the rename updates immediately and the archived project moves to the archived section.
+**Independent Test**: Rename "Untitled Project 3" to "Research: Knowledge Graphs". Archive an old project. Verify the rename updates immediately and the archived project moves to the archived section. Select 3 events from project A and reassign to project B — verify events appear under B and a `project.reassigned` event exists in the log.
 
 **Acceptance Scenarios**:
 
-1. **Given** a project named "k8s-research", **When** the user renames it to "Kubernetes Study", **Then** the name updates in all views and is learned by the detection system
-2. **Given** two projects "React" and "Next.js", **When** the user merges them into "Frontend", **Then** all events from both are reassigned, and the merged project shows source events from both originals
+1. **Given** a project named "k8s-research", **When** the user renames it to "Kubernetes Study", **Then** the name updates in all views, a `project.rename` outbound event is recorded, and the new name is learned by the detection system
+2. **Given** two projects "React" and "Next.js", **When** the user merges them into "Frontend", **Then** all events from both are reassigned, a `project.merge` event is recorded, and the merged project shows source events from both originals
+3. **Given** a project with 10 events, **When** the user selects 3 events and splits them into a new project "Side Research", **Then** a new project appears with those 3 events, the source project retains 7, and a `project.split` event is recorded
+4. **Given** 5 events from project A, **When** the user batch-reassigns them to project B using the event selector, **Then** events move to B, a `project.reassign` event is recorded per batch, and the detection system registers the correction
 
 ---
 
-### User Story 5 - Project Discovery and Recommendations (Priority: P3)
+---
+
+### User Story 5 - Project Pinning and Reordering (Priority: P2)
+
+Users can pin important projects to the top of the list and reorder pinned projects by drag-and-drop. Pinned projects appear above unpinned ones and maintain their order across restarts. Archived projects are always at the bottom regardless of pin status.
+
+**Why this priority**: As the project list grows, users need to keep frequently accessed projects accessible. Pinning provides manual curation without affecting auto-detection.
+
+**Independent Test**: Pin projects "OSAI" and "Research" in that order. Verify they appear at the top of the list. Drag "Research" above "OSAI" — verify the order persists after navigating away and back.
+
+**Acceptance Scenarios**:
+
+1. **Given** 20 projects, **When** the user pins "OSAI", **Then** it moves to the top of the list above all unpinned projects with a pin icon visible
+2. **Given** 3 pinned projects, **When** the user drags "Project C" from position 3 to position 1, **Then** the pinned order is updated and persists across restarts
+3. **Given** a pinned project is archived, **When** viewing the project list, **Then** it moves to the archived section regardless of pin status
+
+---
+
+### User Story 6 - Project Discovery and Recommendations (Priority: P3)
 
 The projects view includes a "Discover" section suggesting potential projects from orphan events (events not assigned to any project). It also shows "Related Projects" based on shared entities or sources.
 
@@ -93,6 +113,10 @@ The projects view includes a "Discover" section suggesting potential projects fr
 - How are projects spanning very long time periods (years) displayed?
 - What happens to project associations when events are deleted?
 - How are project signals displayed for explainability in the UI?
+- What happens when the last event is reassigned out of a project — does the project auto-archive?
+- How are pinned project orders persisted and optionally synced across devices?
+- What happens to reassignment history (log) when the reassigned event is pruned by data retention?
+- How does split handle overlapping signals — what if the split events also match the source project's signals?
 
 ## Requirements
 
@@ -109,18 +133,31 @@ The projects view includes a "Discover" section suggesting potential projects fr
 - **FR-009**: Delete MUST remove the project entity but keep events unassociated (events are not deleted)
 - **FR-010**: Projects view MUST include a "Discover" section showing suggested projects from orphan events with confidence scores
 - **FR-011**: Projects view MUST show "Related Projects" based on shared entities, sources, or temporal proximity
-- **FR-012**: Manual project operations (rename, merge) MUST be persisted and learned by the detection system
+- **FR-012**: Manual project operations (rename, merge) MUST be persisted and learned by the detection system (spec 015)
 - **FR-013**: Projects view MUST use components and tokens from the design system (spec 059) — all colors, spacing, typography, and interactive elements
 - **FR-014**: Projects view MUST support dark, light, and high-contrast themes via the theme provider (spec 059)
 
+#### Project Reorganization
+
+- **FR-015**: Users MUST be able to reassign individual events or batches between projects — produces outbound `project.reassign` event in the log
+- **FR-016**: Users MUST be able to split a project — select a subset of events and move them to a new or existing project — produces outbound `project.split` event
+- **FR-017**: Users MUST be able to create a project manually before any events are detected — produces outbound `project.create` event
+- **FR-018**: Users MUST be able to pin/unpin projects — pinned projects appear at the top of the list, order persists across restarts
+- **FR-019**: Users MUST be able to reorder pinned projects by drag-and-drop
+- **FR-020**: All project operations (create, rename, merge, reassign, split, archive, unarchive, delete, pin) MUST produce outbound events following the Context Protocol envelope (spec 001) — `app: "com.osai.projects-view"`, `event: "project"`, `action: {operation}` with relevant payload
+- **FR-021**: Manual project corrections MUST be fed back to the detection system (spec 015) as training signals — the system adjusts signal weights for future auto-detection
+- **FR-022**: If the last event is reassigned out of a project, the project MUST be automatically archived after user confirmation
+- **FR-023**: Event selector for reassign/split MUST support multi-select with shift-click range and Ctrl-click toggle
+
 ### Key Entities
 
-- **ProjectCard**: A project list item. Displays: name, state badge, event count, date range, entity tags, last activity.
+- **ProjectCard**: A project list item. Displays: name, state badge, event count, date range, entity tags, last activity, pinned state, pin toggle.
 - **ProjectDetail**: Full project view. Sections: project header (name, state, actions), scoped timeline, entity cloud, source chart, activity chart, related projects, signal explanation.
 - **ProjectTimeline**: A scoped timeline component showing only sessions/events for a specific project.
 - **EntityCloud**: Visual representation of entities sized by mention count within a project.
 - **DiscoverSection**: Suggested projects from orphan events. Each suggestion has confidence score and Create/Dismiss actions.
-- **ProjectActionBar**: Actions available per project: Rename, Archive/Unarchive, Merge (select target), Delete.
+- **ProjectActionBar**: Actions available per project: Rename, Archive/Unarchive, Merge (select target), Split, Reassign Events, Pin/Unpin, Delete.
+- **EventSelector**: Batch selection UI for reassign/split operations. Supports shift-click range, Ctrl-click toggle, select all. Shows count of selected events.
 
 ## Success Criteria
 
@@ -131,7 +168,10 @@ The projects view includes a "Discover" section suggesting potential projects fr
 - **SC-003**: Scoped project timeline loads in under 200ms
 - **SC-004**: Project rename updates in all views in under 100ms
 - **SC-005**: Merge operation for 2 projects with 200 events completes in under 500ms
-- **SC-006**: Entity cloud renders with 50+ entities at 60fps
+- **SC-006**: Split operation on 50 events completes in under 200ms
+- **SC-007**: Reassign batch of 20 events completes in under 100ms
+- **SC-008**: Pin reorder persists across app restarts
+- **SC-009**: Entity cloud renders with 50+ entities at 60fps
 
 ## Assumptions
 

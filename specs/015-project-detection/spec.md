@@ -111,6 +111,9 @@ The system shows why events were clustered into a project — which signals cont
 - **FR-010**: System MUST exclude system events (activity monitor heartbeats, system lifecycle) from project detection
 - **FR-011**: System MUST support re-clustering on demand — re-run detection with updated signals or parameters
 - **FR-012**: System MUST publish `project.detected`, `project.updated`, `project.merged`, `project.state_changed` events
+- **FR-013**: System MUST consume Context Protocol outbound events (`project.reassigned`, `project.split`, `project.merged`, `project.renamed`, `project.created`, `project.archived`) from the event log as training signals
+- **FR-014**: System MUST store all manual corrections in the `project_corrections` table and use them to adjust signal weights for future clustering runs — an event reassigned to a different project reduces the weight of signals that pointed to the original project
+- **FR-015**: After processing a manual correction batch, the system MUST re-evaluate unassigned events that share signals with the corrected events to improve their assignment
 
 ### Key Entities
 
@@ -139,4 +142,6 @@ The system shows why events were clustered into a project — which signals cont
 - The first time project detection runs, it processes all existing events. Subsequent runs only process new events incrementally
 - Default min cluster size of 10 events prevents single-session projects from being created
 - Users can define "sacred projects" — manually created projects with pinned signals that override auto-detection
+- Manual corrections are consumed from the event log as Context Protocol events (spec 001) — the detection system reads `project.reassigned`, `project.split`, etc. from the log and does not require a direct API call from the UI
+- The `project_corrections` table stores each correction with the previous and new project assignment, timestamp, and signal context at the time of correction
 - Source code lives at `knowledge-engine/project-detection/` in the monorepo
