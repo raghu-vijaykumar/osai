@@ -1,0 +1,44 @@
+{
+  "name": "osai-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "build:desktop": "cd apps/desktop && pnpm build",
+    "test": "turbo run test",
+    "test:unit": "turbo run test --filter=./packages/* --filter=./services/* --filter=./sdks/*",
+    "test:rust": "cargo test --lib",
+    "test:integration": "turbo run test:integration",
+    "test:e2e": "cd apps/desktop && pnpm test:e2e",
+    "test:coverage": "turbo run test:coverage",
+    "test:contract": "turbo run test:contract",
+    "lint": "turbo run lint",
+    "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:rust": "cargo fmt --check",
+    "typecheck": "turbo run typecheck",
+    "typecheck:rust": "cargo check --all-targets --all-features",
+    "clean": "turbo run clean && cargo clean",
+    "validate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:rust",
+    "validate:full": "pnpm validate && pnpm test:integration && pnpm test:coverage",
+    "validate:e2e": "pnpm build:desktop && pnpm test:e2e",
+    "ci:all": "pnpm validate:full && pnpm test:contract",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27",
+    "@types/node": "^20",
+    "eslint": "^9",
+    "lefthook": "^1.10",
+    "prettier": "^3",
+    "prettier-plugin-tailwindcss": "^0.6",
+    "turbo": "^2.3",
+    "typescript": "^5.7",
+    "vitest": "^3"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

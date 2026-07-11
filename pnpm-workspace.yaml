@@ -1,0 +1,9 @@
+packages:
+  - "packages/*"
+  - "services/*"
+  - "sdks/*"
+  - "apps/*"
+  - "connectors/*"
+  - "agents/*"
+  - "protocol/*"
+  - "mcp/*"

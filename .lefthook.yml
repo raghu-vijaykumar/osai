@@ -1,0 +1,22 @@
+# yaml-language-server: $schema="https://raw.githubusercontent.com/evilmartians/lefthook/master/schema.json"
+pre-commit:
+  parallel: true
+  commands:
+    eslint:
+      glob: "*.{ts,tsx}"
+      run: eslint --fix {staged_files}
+      stage_fixed: true
+    prettier:
+      glob: "*.{ts,tsx,json,md,yaml,yml,css}"
+      run: prettier --write {staged_files}
+      stage_fixed: true
+    rust-fmt:
+      glob: "*.rs"
+      run: cargo fmt -- {staged_files}
+      stage_fixed: true
+
+pre-push:
+  parallel: false
+  commands:
+    validate:
+      run: pnpm validate

@@ -103,8 +103,8 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 - **FR-004**: System MUST configure project references in TypeScript for cross-package type resolution
 - **FR-005**: System MUST use ESLint with `typescript-eslint` at the root, extended by packages
 - **FR-006**: System MUST use Prettier as the sole formatter with a root `.prettierrc`
-- **FR-007**: System MUST use Vitest as the test runner with root `vitest.workspace.ts` config
-- **FR-008**: System MUST define root `package.json` scripts: `build`, `test`, `lint`, `format`, `typecheck`, `clean`
+- **FR-007**: System MUST use Vitest as the TypeScript test runner with root `vitest.workspace.ts` config
+- **FR-008**: System MUST define root `package.json` scripts: `build`, `test`, `lint`, `format`, `typecheck`, `clean`, `validate`, `validate:full`, `validate:e2e`
 - **FR-009**: System MUST configure `.npmrc` with `shamefully-hoist=true` for proper package resolution
 - **FR-010**: System MUST configure turborepo pipeline with `build`, `test`, `lint`, `typecheck` tasks respecting dependency order
 - **FR-011**: System MUST use lefthook or husky for pre-commit hooks (lint-staged)
@@ -112,7 +112,23 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 - **FR-013**: Each package MUST be scoped under `@osai/` namespace
 - **FR-014**: Each package MUST have a `package.json` with `publishConfig` for public access
 - **FR-015**: System MUST support both ESM and CJS output formats
-- **FR-016**: System MUST configure git hooks via lefthook (or simple pre-commit script) for formatting staged files
+- **FR-016**: System MUST configure git hooks via lefthook for formatting staged files
+
+### Testing Infrastructure Requirements
+
+- **FR-017**: System MUST define root `pnpm validate` script that runs: lint → typecheck → unit tests (exit on first failure)
+- **FR-018**: System MUST define root `pnpm validate:full` script that runs: lint → typecheck → unit → integration → coverage
+- **FR-019**: System MUST define root `pnpm validate:e2e` script for E2E Playwright tests (runs after full build)
+- **FR-020**: System MUST configure turborepo pipeline so `test` depends on `build` for each package
+- **FR-021**: Rust core (`crates/osai-core/`) MUST use `cargo test` with tests runnable from root via `pnpm test:rust`
+- **FR-022**: Root `vitest.workspace.ts` MUST include all TypeScript packages (apps, services, packages, sdks)
+- **FR-023**: Each TypeScript package MUST have a `vitest.config.ts` with resolved `project` reference
+- **FR-024**: Coverage MUST be collected per-package and aggregated at root via `pnpm test:coverage`
+- **FR-025**: Minimum coverage thresholds: 90% for Rust core and SDKs, 80% for webview and sidecars
+- **FR-026**: CI MUST define separate jobs for: lint, typecheck, unit, coverage, integration, e2e (PR only), contract
+- **FR-027**: Pre-commit hooks MUST run lint-staged on: `*.{ts,tsx}` (eslint + prettier), `*.rs` (cargo fmt)
+- **FR-028**: Test framework MUST support `--watch` mode for development (vitest --watch, cargo watch)
+- **FR-029**: All tests MUST be runnable in CI with a single root command: `pnpm ci:all` (full pipeline, exit on failure)
 
 ### Key Entities
 
@@ -132,6 +148,10 @@ A CI pipeline builds, versions, and publishes packages to npm when a release tag
 - **SC-004**: `pnpm lint` completes on the full codebase in under 10 seconds
 - **SC-005**: `pnpm test` with no tests yet fails gracefully (exit 0 with "no test files found" message)
 - **SC-006**: All TypeScript strict mode checks pass with zero errors on initial setup
+- **SC-007**: `pnpm validate` completes the full validation pipeline in under 3 minutes
+- **SC-008**: CI pipeline completes (excluding E2E) in under 10 minutes
+- **SC-009**: Code coverage is reported per-package with thresholds enforced in CI
+- **SC-010**: Pre-commit hooks complete on 10 staged files in under 5 seconds
 
 ## Assumptions
 
