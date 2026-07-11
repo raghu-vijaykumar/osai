@@ -12,11 +12,11 @@
 
 ### User Story 1 - Agent Lifecycle Management (Priority: P1)
 
-The scheduling system manages the full lifecycle of each agent: registered → loaded → initialized → active → paused → error → stopped. Users can see all agents and their current state in the Agent Panel. Agents are automatically started when the app launches and gracefully stopped on shutdown.
+The scheduling system manages the full lifecycle of each agent: registered → loaded → initialized → active → paused → error → stopped. Users can see all agents and their current state in a Settings > Agent Manager view. Agents are automatically started when the app launches and gracefully stopped on shutdown.
 
 **Why this priority**: Without lifecycle management, agents are unreliable — they might not start, might crash silently, or might not clean up resources.
 
-**Independent Test**: Open the Agent Panel and verify all registered agents are listed with their state: Summarizer (active), Organizer (active), Researcher (active), etc. Click "Pause" on the Researcher agent, verify its state changes to "paused" within 2 seconds. Click "Resume", verify it returns to "active".
+**Independent Test**: Open Settings > Agent Manager and verify all registered agents are listed with their state: Summarizer (active), Organizer (active), Researcher (active), etc. Click "Pause" on the Researcher agent, verify its state changes to "paused" within 2 seconds. Click "Resume", verify it returns to "active".
 
 **Acceptance Scenarios**:
 
@@ -32,7 +32,7 @@ Agents can be scheduled to run on cron-like schedules. The Summarizer runs daily
 
 **Why this priority**: Scheduling is the backbone of autonomous agent operation. Without it, agents only work when manually triggered.
 
-**Independent Test**: Open the schedule view in Agent Panel. Verify: Summarizer is scheduled "Daily at 9 PM", Organizer is scheduled "Every 15 minutes", Recommendation Agent is "Continuous". Wait for the Organizer's next scheduled run and verify it completes and the "Last Run" timestamp updates.
+**Independent Test**: Open the schedule view in Agent Manager (Settings). Verify: Summarizer is scheduled "Daily at 9 PM", Organizer is scheduled "Every 15 minutes", Recommendation Agent is "Continuous". Wait for the Organizer's next scheduled run and verify it completes and the "Last Run" timestamp updates.
 
 **Acceptance Scenarios**:
 
@@ -60,7 +60,7 @@ The scheduling system manages resource allocation: CPU, memory, and API rate lim
 
 ### User Story 4 - Health Monitoring and Recovery (Priority: P2)
 
-The scheduling system monitors agent health: heartbeat checks, crash detection, and automatic restart with exponential backoff. Agents that crash 3 times within an hour are disabled and the user is notified. Health metrics (uptime, runs completed, error rate) are visible in the Agent Panel.
+The scheduling system monitors agent health: heartbeat checks, crash detection, and automatic restart with exponential backoff. Agents that crash 3 times within an hour are disabled and the user is notified. Health metrics (uptime, runs completed, error rate) are visible in the Agent Manager (Settings).
 
 **Why this priority**: Self-healing agents reduce support burden. Users shouldn't need to manually restart crashed agents.
 
@@ -103,7 +103,7 @@ Some agents depend on others. For example, the Recommendation Agent depends on t
 ### Functional Requirements
 
 - **FR-001**: Scheduling system MUST manage agent lifecycle: registered → loaded → initialized → active → paused → error → stopped
-- **FR-002**: Agent state MUST be visible in the Agent Panel for all registered agents
+- **FR-002**: Agent state MUST be visible in the Agent Manager (Settings) for all registered agents
 - **FR-003**: Agents MUST auto-start on app launch (if enabled)
 - **FR-004**: Agents MUST gracefully stop on app shutdown (within 5 seconds per agent)
 - **FR-005**: Agents MUST support cron-based scheduling for periodic runs

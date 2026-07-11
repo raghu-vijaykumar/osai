@@ -41,8 +41,8 @@ pnpm validate:e2e
 ## Conventions
 
 - **TypeScript/React**: Functional components, Tailwind CSS, design system tokens (spec 059), `vitest` + `@testing-library/react`
-- **Rust core**: `rusqlite` for SQLite, `notify` crate for file watching, `cargo test`
-- **Node.js sidecars**: Knowledge engine, MCP server, agents — `vitest` for tests
+- **Rust core**: `rusqlite` for SQLite, `refinery` for schema migrations, `notify` crate for file watching, `cargo test`
+- **Node.js sidecars**: Knowledge engine, MCP server, agents — `vitest` for tests, `umzug` for schema migrations
 - **Branch naming**: `###-feature-name` matching spec number (e.g., `001-context-protocol`)
 - **No comments in code** unless the logic is non-obvious
 - **No emojis** in any file
@@ -58,7 +58,7 @@ services/              — Node.js sidecars (knowledge engine, MCP server, agent
 sdks/                  — Language SDKs (python, rust, go)
 connectors/            — Capture connectors (browser ext, vscode, media, pdf, api)
 protocol/              — Protocol schemas, sync protocol, specification
-specs/                 — All feature specifications (000–059)
+specs/                 — All feature specifications (000–064)
 docs/                  — Architecture, roadmap, development guides
 ```
 
@@ -70,6 +70,9 @@ docs/                  — Architecture, roadmap, development guides
 - `specs/059-design-system/spec.md`: Design tokens, components, theming
 - `specs/060-auto-update/spec.md`: Auto-update mechanism, channels, rollout
 - `specs/061-onboarding/spec.md`: First-run onboarding and contextual tips
+- `specs/062-llm-integration/spec.md`: Provider abstraction, BYOK, model routing, cost tracking
+- `specs/063-capture-controls/spec.md`: Per-connector enable/disable, pause/resume, schedules, central Settings UI
+- `specs/064-agent-host/spec.md`: Background agent host — event intake, proactive suggestions, Save-to-KB, chat dispatch
 
 ## Community
 

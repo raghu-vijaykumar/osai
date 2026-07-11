@@ -104,7 +104,7 @@ On first start, the watcher scans all watched directories and publishes the init
 - **FR-003**: Service MUST recursively watch all subdirectories within each configured path
 - **FR-004**: Service MUST publish `file.created` event when a new file appears with `path`, `size`, `mimeType`, `extension`
 - **FR-005**: Service MUST publish `file.modified` event when an existing file changes with `path`, `size`, `mtime`, `previousSize`
-- **FR-066**: Service MUST publish `file.deleted` event when a file is removed with `path`, `previousSize`, `age` (how long the file existed)
+- **FR-006**: Service MUST publish `file.deleted` event when a file is removed with `path`, `previousSize`, `age` (how long the file existed)
 - **FR-007**: Service MUST publish `file.renamed` event when a file is renamed/moved with `oldPath`, `newPath`
 - **FR-008**: Service MUST debounce `file.modified` events — coalesce rapid changes within a 5-second window per file
 - **FR-009**: Service MUST support exclusion patterns (glob) in config — matching files/directories are skipped
@@ -117,6 +117,9 @@ On first start, the watcher scans all watched directories and publishes the init
 - **FR-016**: Service MUST support hot-reload of config — changes to watched directories or exclusions take effect without restart
 - **FR-017**: Service MUST limit concurrent watcher instances based on OS limits (`fs.inotify.max_user_watches` on Linux)
 - **FR-018**: Service MUST NOT follow symlinks by default (configurable)
+- **FR-019**: Service MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via in-process IPC — see spec 063. Since the watcher runs in-process, this is a simple flag check before each event publish. On `disable`, stop watching entirely and drop all watchers. On `pause`, stop publishing but keep watchers alive. On `resume`, resume publishing.
+- **FR-020**: Service MUST send a heartbeat to the Rust core every 60 seconds via in-process message, containing `events_today`, `last_event_at`, `directories_watched`, and any errors — see spec 063 FR-027
+- **FR-021**: Service MUST register a `config_schema` at source registration time exposing watched directories, exclusions, and symlink behavior as configurables — see spec 063 FR-014
 
 ### Key Entities
 

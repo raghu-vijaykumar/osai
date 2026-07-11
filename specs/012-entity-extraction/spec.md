@@ -140,4 +140,5 @@ Users can define custom entity patterns (regex or keywords) for domain-specific 
 - Confidence scores are computed from: extractor reliability (0.8 for NER, 0.6 for keyword, 1.0 for exact custom pattern match), frequency across corpus, and context quality
 - Entity normalization: lowercase, strip trailing punctuation, resolve Unicode normalization form NFC
 - Maximum 50 entities extracted per event (to limit noise from generic content)
+- Any LLM-based entity extraction uses the provider abstraction layer (spec 062) — lightweight NER via `compromise` is the default, with optional LLM-backed extraction for higher accuracy
 - Source code lives at `knowledge-engine/entity-extraction/` in the monorepo

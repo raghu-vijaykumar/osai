@@ -140,4 +140,5 @@ Users can define custom classification rules using patterns on event type, sourc
 - Classification runs in a background worker queue, not in the event publishing path
 - Activity types are configurable — users can add, remove, or rename categories
 - English-first classification with basic support for other languages via URL patterns
+- Any LLM-based classification uses the provider abstraction layer (spec 062) — keyword-based classifier is the default, with optional LLM-backed classification for ambiguous categories
 - Source code lives at `knowledge-engine/classification/` in the monorepo

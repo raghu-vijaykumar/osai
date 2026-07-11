@@ -31,7 +31,7 @@ The connector extracts text content from PDFs for indexing and search. Extractio
 
 **Why this priority**: Full-text indexing of PDFs makes their content searchable alongside other events. Users can find "that paper about transformers" without remembering the file name.
 
-**Independent Test**: Open a PDF with text content. After 30 seconds (allowing for extraction), search for a keyword from the PDF in the OSAI command bar. Verify the PDF appears in search results with the matching text highlighted.
+**Independent Test**: Open a PDF with text content. After 30 seconds (allowing for extraction), search for a keyword from the PDF in the OSAI Chat Bar. Verify the PDF appears in search results with the matching text highlighted.
 
 **Acceptance Scenarios**:
 
@@ -90,10 +90,27 @@ The connector supports multiple PDF viewers: system default, browser-based (Chro
 - **FR-005**: Extracted content MUST be published as linked events for indexing
 - **FR-006**: Connector MUST capture highlights: page, selected text, color (if available)
 - **FR-007**: Connector MUST capture notes: page, content, timestamp
-- **FR-008**: Connector MUST support multiple PDF viewers: system default, browser, Adobe, SumatraPDF, Foxit, Okular
+- **FR-008**: Connector MUST support multiple PDF viewers via window title detection + file watcher integration (see per-tool table below)
 - **FR-009**: Connector MUST handle password-protected PDFs gracefully (no content extraction)
 - **FR-010**: Connector MUST handle scanned/image-only PDFs (OCR-extracted text if possible)
 - **FR-011**: Page change events MUST be throttled to at most once per 5 seconds
+- **FR-012**: Connector MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via IPC — see spec 063. On `disable`, stop all PDF detection and drop timers. On `pause`, stop publishing but keep accessibility polling active. On `resume`, resume publishing.
+- **FR-013**: Connector MUST send a heartbeat to the Rust core every 60 seconds via IPC, containing `events_today`, `last_event_at`, `pdfs_open`, and any errors — see spec 063 FR-027
+- **FR-014**: Connector MUST register a `config_schema` listing its tool-specific settings (OCR toggle, excluded directories) as configurables — see spec 063 FR-014
+
+### Per-Tool Connector Specifications
+
+| Tool | App ID | How it's detected | How page changes are tracked | Setup |
+|------|--------|-------------------|------------------------------|-------|
+| **Adobe Acrobat** | `com.adobe.acrobat` | Window title pattern: `"* - Adobe Acrobat*"` or `"* - Adobe Acrobat Reader*"`. File path obtained via accessibility API or `GetWindowText` + file watcher cross-reference. | Accessibility API (Windows: `IAccessible`, macOS: `NSAccessibility`) — query current page number from the page navigation control. Poll every 5 seconds. | No user setup needed. macOS requires Accessibility permission grant. |
+| **SumatraPDF** | `com.sumatrapdf` | Window title pattern: `"* - SumatraPDF"`. File path from title (SumatraPDF shows filename in title bar). | SumatraPDF has a `--cmd` option for IPC, but simpler: poll window title for page indicator pattern `"Page X/Y"` every 5 seconds. | No setup needed. Portable, open-source. |
+| **Okular** | `org.kde.okular` | Window title pattern: `"*.pdf - Okular"` (Linux, KDE). File path from title. | Okular exposes D-Bus interface (`org.kde.okular`). Query current page via `pageNumber()` method. | No setup on KDE. On other DEs, D-Bus may require `kdelibs`. Fallback: window title polling. |
+| **Zathura** | `org.zathura` | Window title pattern: `"* - zathura*"`. File path from title. | Zathura exposes a Unix socket IPC (like mpv): `--synctex` or check for `zathura-ipc`. Send `{"command": "page"}` via socket. | No setup needed. Open-source. |
+| **Browser (Chrome PDF)** | `com.google.Chrome` | Handled by the browser extension (spec 006). Extension detects `chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai` PDF viewer URL. | Chrome's extension API provides `webNavigation` + content script injection. The extension injects a script that polls `document.querySelector("#pageNumber").value`. | Already handled by the browser extension — no separate setup. |
+| **Browser (Firefox PDF)** | `com.mozilla.firefox` | Same as Chrome — handled by Firefox extension. Firefox uses `resource://pdf.js/web/viewer.html`. | Same approach: extension content script reads PDF viewer page input element. | Already handled by Firefox extension. |
+| **System default** | `os.system-pdf-viewer` | When a PDF is opened via the file watcher (spec 008) — `file.opened` event with `.pdf` extension. No viewer-specific tracking. | No page tracking — the connector only knows the file was opened. Content extraction still runs. | No setup needed. |
+
+**Content extraction** (for all tools): When `file.opened` / `pdf.opened` is detected, the connector schedules async text extraction using `pdf.js` (Mozilla's OSS PDF parser, ~1.5 MB, runs in Node.js). The extracted text is published as a `pdf.content_extracted` event linked to the PDF open event, which the knowledge engine indexes for full-text search. OCR (Tesseract.js) is optional and user-configurable.
 
 ### Key Entities
 
@@ -121,4 +138,5 @@ The connector supports multiple PDF viewers: system default, browser-based (Chro
 - File watching via the existing file watcher service (spec 008)
 - Password-protected PDFs: detected but not extracted
 - Privacy: users can configure which directories/files to exclude
+- Communication with the Rust core uses the named pipe (Windows) or Unix socket — the same SDK connection as other connectors (see protocol §7 for IPC transport detail)
 - Source code lives at `connectors/pdf/` in the monorepo

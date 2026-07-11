@@ -196,7 +196,7 @@ All typography is applied via utility classes (Tailwind) or semantic React compo
 
 ```tsx
 // Example components
-<h1 className="os-type-2xl">Dashboard</h1>
+<h1 className="os-type-2xl">Home</h1>
 <p className="os-type-base text-os-on-surface-variant">2 hours active today</p>
 <span className="os-type-xs">Just now</span>
 ```
@@ -527,6 +527,6 @@ packages/ui/
 
 ## Dependencies
 
-- **Required by**: Specs 018 (Timeline), 019 (Projects), 020 (Graph), 021 (Command Bar), 022 (Agent Panel), 023 (Context Sidebar), 024 (Dashboard), 010 (Status Tray icon variants)
+- **Required by**: Specs 018 (History), 019 (Topics), 020 (Explore), 021 (Chat Bar), 022 (Ask), 023 (Now), 024 (Home), 010 (Status Tray icon variants)
 - **Depends on**: Tailwind CSS, React, lucide-react (all already in monorepo)
 - **Also referenced by**: Spec 038 (Cloud Dashboard), 047 (Mobile App), 049 (Community Site) — their responsive/theme requirements cascade from this spec

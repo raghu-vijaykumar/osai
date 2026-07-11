@@ -182,5 +182,6 @@ Events can be grouped into sessions — contiguous periods of related activity (
 - Protocol version follows semver. Current version is `1.0.0`. Breaking changes increment the MAJOR version.
 - The protocol supports optional fields for forward compatibility — consumers MUST ignore unknown fields
 - Permissions derived from source registration — stored in the log itself
-- No network transport is needed in Phase 0 — publish/consume is local-only
+- Local transport via named pipe (Windows) or Unix domain socket (macOS/Linux) — see protocol spec §7 for the full IPC protocol (NDJSON format), native messaging host bridge, discovery via `~/.osai/runtime.json`, and connection lifecycle
+- The `@osai/protocol` SDK abstracts the transport — connectors call `publish(event)` without touching sockets directly
 - Schema registry is in-memory on first pass, persisted to storage later

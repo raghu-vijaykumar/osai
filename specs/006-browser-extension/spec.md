@@ -104,7 +104,7 @@ The extension captures file downloads — filename, URL, size, MIME type — as 
 - **FR-003**: Extension MUST publish a `page.content` event with extracted visible text, OpenGraph meta, and page metadata within 5 seconds of page load
 - **FR-004**: Extension MUST publish `tab.activated`, `tab.deactivated`, `tab.closed`, `tab.updated` events reflecting tab state changes
 - **FR-005**: Extension MUST publish `download.started`, `download.completed` events reflecting browser download state
-- **FR-006**: Extension MUST communicate with the local OSAI process via native messaging (Chrome nativeMessaging API)
+- **FR-006**: Extension MUST communicate with the local OSAI process via `chrome.runtime.connectNative("com.osai.native-host")` (Chrome nativeMessaging API) — the native host binary translates the browser's framed messages to OSAI's NDJSON over named pipe / Unix socket
 - **FR-007**: Extension MUST include a popup UI showing: capture status toggle, recent events list, blocklist management, connection status
 - **FR-008**: Extension MUST support a user-configurable blocklist of domains/URLs that are excluded from capture
 - **FR-009**: Extension MUST respect incognito mode — no events published from incognito windows unless explicitly enabled by user
@@ -116,6 +116,10 @@ The extension captures file downloads — filename, URL, size, MIME type — as 
 - **FR-015**: Extension MUST have an icon badge showing: green (active), gray (paused), red (error/disconnected)
 - **FR-016**: Extension MUST handle native messaging host disconnection gracefully — buffer events in local storage and replay on reconnection
 - **FR-017**: Extension MUST NOT capture authenticated pages (banking, email, etc.) unless explicitly whitelisted by user
+- **FR-018**: Extension MUST accept control signals (`enable`, `disable`, `pause`, `resume`) relayed by the native messaging host from the Rust core — see spec 063 for signal format and behavior
+- **FR-019**: Extension MUST send a heartbeat to the Rust core every 60 seconds via the native messaging host, containing `events_today` count, `last_event_at`, and any errors — see spec 063 FR-027 for heartbeat format
+- **FR-020**: Extension MUST register a `config_schema` at source registration time exposing its blocklist and whitelist as configurables — see spec 063 FR-014
+- **FR-021**: Extension MUST provide a "Save to Knowledge Base" context menu item on pages and links — clicking publishes a `kb.save` event with `url`, `title`, `textContent` to the agent host (spec 064) for classification and storage
 
 ### Key Entities
 
@@ -124,7 +128,7 @@ The extension captures file downloads — filename, URL, size, MIME type — as 
 - **tab.activated/deactivated/closed/updated**: Tab lifecycle events. Payload: `tabId`, `url`, `title`, `activeDuration` (for closed), `pinned`, `audible`.
 - **download.started/completed**: Download lifecycle events. Payload: `filename`, `url`, `size`, `mimeType`, `downloadId`.
 - **Blocklist**: User-configured list of URL patterns excluded from capture. Stored in `chrome.storage.sync`.
-- **Native Messaging Host**: A small executable (Node.js or Go) that bridges the extension to the OSAI event pipeline via stdio.
+- **Native Messaging Host**: A small Rust executable (`com.osai.native-host`, < 5 MB) installed by the OSAI desktop app. It reads framed JSON from stdin (Chrome's nativeMessaging: 4-byte uint32 LE length prefix + UTF-8 JSON), translates each message to NDJSON, forwards it to the Rust core's named pipe / Unix socket (see protocol spec §7.4), reads the NDJSON response, re-frames it, and writes to stdout. It is registered via OS-level native messaging manifests that the OSAI installer creates.
 
 ## Success Criteria
 
@@ -142,7 +146,9 @@ The extension captures file downloads — filename, URL, size, MIME type — as 
 ## Assumptions
 
 - Manifest V3 for Chrome (MV3 is required by Google after 2024). Firefox also supports MV3
-- Native messaging host is a small Node.js script that forwards events to the OSAI protocol SDK
+- Native messaging host is a Rust binary (single-file, no runtime dependency) bundled with the OSAI desktop app installer — see protocol spec §7.4 for full transport detail
+- Native messaging host path: Windows: `%LOCALAPPDATA%\osai\native-host\com.osai.native-host.exe`, macOS: `/Applications/OSAI.app/Contents/Resources/native-host/com.osai.native-host`, Linux: `/opt/osai/native-host/com.osai.native-host`
+- Chrome manifest installed at `HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.osai.native-host` (Windows) or `/etc/opt/chrome/native-messaging-hosts/com.osai.native-host.json` (macOS/Linux)
 - Page text extraction uses `document.body.innerText` with constraints (max length, no script/style content)
 - SPA navigation detection uses a MutationObserver + interval poll fallback (since `pushState` can't be intercepted directly in MV3)
 - Blocklist supports glob patterns (`*.bank.com`, `mail.google.com/*`)

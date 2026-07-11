@@ -359,23 +359,253 @@ The consumer records its position in the log after each successful batch. On res
 
 ## 7. Transport
 
-### 7.1 Local IPC (v1.0.0)
+### 7.1 Architecture
 
-In v1.0.0, transport is exclusively local:
+The Rust core (Tauri app) is the single IPC endpoint for the platform. All connectors, sidecars, and the UI reach it through one of three paths:
 
-- **Rust core → Tauri webview**: Tauri commands (invoke IPC)
-- **Rust core → Node.js sidecars**: Named pipes (Windows) or Unix domain sockets (macOS/Linux)
-- **Registration handshake**: First message on any connection MUST be a registration
+```
+Browser Extension
+  └── chrome.nativeMessaging (stdio)
+       └── Native Messaging Host (bundled executable)
+            └── Named pipe / Unix socket ──┐
+                                            │
+VS Code Extension                           │
+  └── @osai/protocol SDK ───────────────────┤
+       └── Named pipe / Unix socket ────────┤
+                                            │
+Node.js sidecars                             │
+  (knowledge engine, MCP server, agents)     │
+  └── @osai/protocol SDK ───────────────────┤
+       └── Named pipe / Unix socket ────────┤
+                                            │
+API connectors                               │
+  (GitHub, Slack, etc.)                      │
+  └── @osai/protocol SDK ───────────────────┤
+       └── Named pipe / Unix socket ────────┤
+                                            │
+Third-party apps                             │
+  └── @osai/protocol SDK ───────────────────┤
+       └── Named pipe / Unix socket ────────┤
+                                            ▼
+                               ┌────────────────────────┐
+                               │   Rust Core (Tauri)     │
+                               │  ┌──────────────────┐   │
+                               │  │ IPC Server        │   │
+                               │  │ (named pipe /     │   │
+                               │  │  Unix socket)     │   │
+                               │  └────────┬─────────┘   │
+                               │           │             │
+                               │  ┌────────▼─────────┐   │
+                               │  │ Event Log         │   │
+                               │  │ (append-only)     │   │
+                               │  └────────┬─────────┘   │
+                               │           │             │
+                               │  ┌────────▼─────────┐   │
+                               │  │ Derived Stores    │   │
+                               │  │ (SQLite, index)   │   │
+                               │  └──────────────────┘   │
+                               │  ┌──────────────────┐   │
+                               │  │ Tauri Invoke IPC  │   │
+                               │  │ (webview bridge)  │   │
+                               │  └────────┬─────────┘   │
+                               └───────────┼─────────────┘
+                                           │
+                               ┌───────────▼─────────────┐
+                               │   Webview UI             │
+                               │   (React, Tauri invoke)  │
+                               └─────────────────────────┘
+```
 
-### 7.2 API Surface
+### 7.2 IPC Protocol Format
 
-| Operation | Method | Description |
-|-----------|--------|-------------|
-| `register` | `register(app_id, registration)` | Register or update source capabilities |
-| `publish` | `publish(event)` | Append a single event to the log. Returns the event ID. |
-| `publishBatch` | `publishBatch(events[])` | Append multiple events atomically. Returns array of IDs. |
-| `query` | `query(filters)` | Query events from the derived store. Returns paginated results. |
-| `queryLog` | `queryLog(from_position, limit)` | Query raw log entries starting from a position. Used for rebuild and sync. |
+All communication over the named pipe / Unix socket uses **newline-delimited JSON (NDJSON)**. Each message is a single JSON object, terminated by `\n`. The receiver reads lines and parses each as JSON.
+
+#### Request Format
+
+```json
+{
+  "type": "<operation>",
+  "id": "<uuid-v7>",
+  "payload": {}
+}
+```
+
+- `type` — one of `register`, `publish`, `publish_batch`, `query`, `query_log`
+- `id` — client-generated, echoed back in the response (for correlating async replies)
+- `payload` — operation-specific fields
+
+#### Response Format
+
+```json
+{
+  "id": "<matching-request-id>",
+  "ok": true,
+  "result": {}
+}
+```
+
+On error:
+
+```json
+{
+  "id": "<matching-request-id>",
+  "ok": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Event payload failed schema validation",
+    "details": []
+  }
+}
+```
+
+#### Protocol Version Check
+
+Before any operations, the client MAY send a lightweight handshake:
+
+```json
+{ "type": "handshake", "id": "h1", "payload": { "version": "1.0.0" } }
+```
+
+Response:
+
+```json
+{ "id": "h1", "ok": true, "result": { "version": "1.0.0", "server_id": "osai-core" } }
+```
+
+If the server's protocol version has a MAJOR mismatch, it returns `UNSUPPORTED_PROTOCOL_VERSION` and the client MUST disconnect.
+
+### 7.3 Named Pipe (Windows) / Unix Socket (macOS/Linux)
+
+| Property | Value |
+|----------|-------|
+| **Windows pipe name** | `\\.\pipe\osai` |
+| **macOS/Linux socket path** | `/tmp/osai.sock` |
+| **Fallback socket path** | `$XDG_RUNTIME_DIR/osai.sock` (Linux) |
+| **Max message size** | 16 MB |
+| **Encoding** | UTF-8 |
+| **Concurrency** | Multiple concurrent clients; ordered by arrival |
+| **Backlog** | SOMAXCONN (OS default) |
+| **Permissions** | Socket file: `0700` (owner-only) on UNIX, pipe ACL-restricted on Windows |
+
+The Rust core creates the pipe/socket on startup and listens for connections. If the socket file already exists (from a previous crash), the core deletes it before binding. On graceful shutdown, the socket/pipe is cleaned up.
+
+### 7.4 Native Messaging Host (Browser Bridge)
+
+Chrome and Firefox extensions cannot open arbitrary sockets. They communicate via the browser's `nativeMessaging` API, which spawns a helper executable.
+
+#### Host Executable
+
+- **Name**: `com.osai.native-host`
+- **Location**: Installed by the OSAI desktop app at a platform-specific path
+  - Windows: `%LOCALAPPDATA%\osai\native-host\com.osai.native-host.exe`
+  - macOS: `/Applications/OSAI.app/Contents/Resources/native-host/com.osai.native-host`
+  - Linux: `/opt/osai/native-host/com.osai.native-host`
+- **Size target**: < 5 MB (could be a Rust binary or a Node.js script bundled with `pkg`)
+- **Language**: Rust preferred (single binary, no runtime dependency)
+
+#### Host Protocol
+
+The browser communicates with the host via stdio using Chrome's native messaging framing:
+
+```
+[4 bytes: message length as uint32 little-endian] [JSON payload as UTF-8]
+```
+
+The host translates between the browser's framing and the OSAI named pipe / Unix socket:
+
+```
+Browser ──[nativeMessaging framing]──→ Native Host ──[NDJSON over pipe/socket]──→ Rust Core
+```
+
+The host's stdio-to-socket bridge:
+
+```
+1. Browser sends: [4-byte len]["register" message]
+2. Host parses, forwards to socket as NDJSON
+3. Host reads NDJSON response from socket, wraps in nativeMessaging framing, writes to stdout
+4. Browser receives the framed response
+```
+
+#### Host Registration
+
+The native messaging host must be registered with the browser via manifest files:
+
+- **Chrome**: `chrome.nativeMessaging` requires a JSON manifest at a well-known path
+  - Windows: `REG_SZ` under `HKEY_LOCAL_MACHINE\SOFTWARE\Google\Chrome\NativeMessagingHosts\com.osai.native-host`
+  - macOS/Linux: JSON file at `/etc/opt/chrome/native-messaging-hosts/com.osai.native-host.json`
+- **Firefox**: Similar manifest at the Firefox-specific path
+
+The OSAI installer creates these manifests automatically.
+
+### 7.5 Discovery
+
+Connectors must discover how to reach the Rust core's IPC endpoint.
+
+#### Deterministic Path
+
+The simplest approach: well-known pipe/socket paths as defined in 7.3. Every connector uses the same path.
+
+#### Runtime Info File (fallback)
+
+For cases where the socket path might differ (e.g., per-user instances), the Rust core writes a small JSON file at startup:
+
+```
+~/.osai/runtime.json
+```
+
+```json
+{
+  "pid": 12345,
+  "socket_path": "/tmp/osai.sock",
+  "pipe_name": "\\\\.\\pipe\\osai",
+  "protocol_version": "1.0.0"
+}
+```
+
+The `@osai/protocol` SDK reads this file to discover the endpoint. If the file is missing or the PID is dead, the SDK returns `PLATFORM_NOT_RUNNING`.
+
+### 7.6 Connection Lifecycle
+
+#### Connect
+
+```
+1. @osai/protocol.connect() called
+2. Read ~/.osai/runtime.json (fallback) or use well-known path
+3. Open named pipe / Unix socket connection
+4. Send handshake message (protocol version check)
+5. On success: connection ready
+6. On failure: retry up to 3 times with 1s backoff, then emit PLATFORM_NOT_RUNNING
+```
+
+#### Register
+
+Every client **must** register before publishing. Registration is the first operation after connecting:
+
+```
+→ { "type": "register", "id": "r1", "payload": { "app": "com.google.Chrome", "name": "Chrome Browser", "version": "1.0.0", "events": [{"event": "url", "actions": ["visited", "updated"]}] } }
+← { "id": "r1", "ok": true, "result": { "app": "com.google.Chrome", "granted_events": [{"event": "url", "actions": ["visited", "updated"]}], "rejected_actions": [] } }
+```
+
+#### Disconnect & Reconnect
+
+- If the socket disconnects (Rust core restarted), the SDK auto-reconnects with exponential backoff (1s, 2s, 4s, max 30s)
+- The browser extension's native messaging host is re-spawned by the browser on the next `postMessage`
+- On reconnect, the client must re-register (the server drops registrations on shutdown)
+
+#### Buffering
+
+When disconnected, the `@osai/protocol` SDK buffers publish requests in memory (up to 1000 events) and flushes them on reconnect in order. The buffer is capped — if it overflows, the oldest events are dropped and a warning is logged.
+
+### 7.7 API Surface
+
+| Operation | type | Payload | Response | Description |
+|-----------|------|---------|----------|-------------|
+| `handshake` | `handshake` | `{ version }` | `{ version, server_id }` | Protocol version negotiation |
+| `register` | `register` | `{ app, name, version, events }` | `{ app, granted_events, rejected_actions }` | Register or update source capabilities |
+| `publish` | `publish` | `{ event }` | `{ id }` | Append a single event to the log |
+| `publish_batch` | `publish_batch` | `{ events }` | `{ ids }` | Append multiple events atomically |
+| `query` | `query` | `{ filters }` | `{ events, total }` | Query events from the derived store |
+| `query_log` | `query_log` | `{ from_position, limit }` | `{ events, next_position }` | Query raw log entries (for rebuild/sync) |
 
 ---
 

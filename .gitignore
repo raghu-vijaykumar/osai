@@ -13,4 +13,5 @@ test-results/
 playwright-report/
 .opencode/
 .specify/feature.json
+.specify/workflows/runs/
 target/

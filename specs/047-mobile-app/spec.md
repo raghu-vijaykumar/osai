@@ -26,18 +26,18 @@ The mobile app provides a read-only view of the user's timeline. Users can scrol
 
 ---
 
-### User Story 2 - Dashboard Overview (Priority: P2)
+### User Story 2 - Home Overview (Priority: P2)
 
-The mobile app has a dashboard tab showing: today's activity summary (events count, active time, top apps), recent projects, and daily summary (if available from the Summarizer agent). The dashboard is a condensed, mobile-optimized version of the desktop dashboard.
+The mobile app has a home tab showing: today's activity summary (events count, active time, top apps), recent topics, and daily summary (if available from the Summarizer agent). The home tab is a condensed, mobile-optimized version of the desktop Home screen.
 
-**Why this priority**: The dashboard provides a quick daily overview without needing to scroll through the full timeline.
+**Why this priority**: The home tab provides a quick daily overview without needing to scroll through the full timeline.
 
-**Independent Test**: Open the mobile app, navigate to the Dashboard tab. Verify it shows: "Today: 347 events, 2h 15m active" with a breakdown bar showing top apps (VSCode 45%, Chrome 30%, Slack 15%, Other 10%). Verify "Recent Projects" shows the last 3 projects with event counts.
+**Independent Test**: Open the mobile app, navigate to the Home tab. Verify it shows: "Today: 347 events, 2h 15m active" with a breakdown bar showing top apps (VSCode 45%, Chrome 30%, Slack 15%, Other 10%). Verify "Recent Topics" shows the last 3 topics with event counts.
 
 **Acceptance Scenarios**:
 
-1. **Given** the mobile app, **When** the user opens the Dashboard tab, **Then** a condensed activity summary is shown with total events, active time, and top apps (horizontal bar chart)
-2. **Given** a daily summary exists, **When** the dashboard loads, **Then** the summary narrative is shown at the top (truncated to 3 lines with "Read more" expand)
+1. **Given** the mobile app, **When** the user opens the Home tab, **Then** a condensed activity summary is shown with total events, active time, and top apps (horizontal bar chart)
+2. **Given** a daily summary exists, **When** the home tab loads, **Then** the summary narrative is shown at the top (truncated to 3 lines with "Read more" expand)
 
 ---
 

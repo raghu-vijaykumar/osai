@@ -14,9 +14,9 @@ OSAI uses inline sequential tooltips to introduce new users to key features. No 
 
 ### User Story 1 - First-Launch Onboarding Sequence (Priority: P1)
 
-On first launch (no existing data), a subtle tooltip points to the Dashboard: "Welcome to OSAI — your memory for everything you do. Your activity will appear here as it's captured." After dismissing, the next tooltip points to the Command Bar: "Press Ctrl+K to search or run commands." Then the Timeline icon: "Browse your history in the Timeline view." Each tooltip has a "Next" button, a "Skip all" link, and a progress indicator (1 of 5).
+On first launch (no existing data), a subtle tooltip points to Home: "Welcome to OSAI — your memory for everything you do. Your activity will appear here as it's captured." After dismissing, the next tooltip points to the Chat Bar (Ctrl+K): "Press Ctrl+K to ask questions or run commands." Then the History icon: "Browse your past activity in the History view." Each tooltip has a "Next" button, a "Skip all" link, and a progress indicator (1 of 5).
 
-**Independent Test**: Clear app data. Launch the app. Verify the first tooltip appears over the Dashboard area with welcome text. Click "Next" and verify it points to the Command Bar. Click "Skip all" and verify all tooltips are dismissed. Re-launch the app and verify no tooltips appear.
+**Independent Test**: Clear app data. Launch the app. Verify the first tooltip appears over the Home area with welcome text. Click "Next" and verify it points to the Chat Bar (Ctrl+K). Click "Skip all" and verify all tooltips are dismissed. Re-launch the app and verify no tooltips appear.
 
 **Acceptance Scenarios**:
 
@@ -39,13 +39,13 @@ Individual tooltips can be dismissed by clicking the backdrop or pressing Escape
 
 ### User Story 3 - Contextual Tips (Priority: P2)
 
-Beyond the initial sequence, contextual one-time tips appear when the user first performs certain actions: "You can customize your dashboard by clicking the Customize button" (first dashboard view), "Sessions group related activity — click to expand" (first timeline use), "Try asking a question in natural language" (first command bar use). These tips have a "Got it" button and a "Don't show again" toggle in their footer.
+Beyond the initial sequence, contextual one-time tips appear when the user first performs certain actions: "Sessions group related activity — click to expand" (first history use), "Try asking a question in natural language" (first chat bar use). These tips have a "Got it" button and a "Don't show again" toggle in their footer.
 
-**Independent Test**: Open the Timeline for the first time. Verify a contextual tip appears: "Sessions group related activity — click to expand." Click "Got it." Navigate away and back to Timeline. Verify the tip does not reappear.
+**Independent Test**: Open History for the first time. Verify a contextual tip appears: "Sessions group related activity — click to expand." Click "Got it." Navigate away and back to History. Verify the tip does not reappear.
 
 **Acceptance Scenarios**:
 
-1. **Given** a user opens the Command Bar for the first time, **When** they type a query, **Then** a one-time tip appears: "Try typing 'What did I work on yesterday?' for AI-powered answers"
+1. **Given** a user opens the Chat Bar for the first time, **When** they type a query, **Then** a one-time tip appears: "Try typing 'What did I work on yesterday?' for AI-powered answers"
 2. **Given** a contextual tip is showing, **When** the user clicks "Don't show this again", **Then** all future tips from that category are suppressed
 
 ### Edge Cases
@@ -53,7 +53,7 @@ Beyond the initial sequence, contextual one-time tips appear when the user first
 - What happens if the user resizes the window while a tooltip is pointing at a specific element?
 - How are tooltips handled on very small windows (< 800px)?
 - What happens if the target element doesn't exist yet (lazy loaded)?
-- How do tooltips interact with modals, dialogs, or the command bar overlay?
+- How do tooltips interact with modals, dialogs, or the Chat Bar overlay?
 - What happens if the user switches themes while a tooltip is showing?
 - How are tooltips handled for users who reload the app mid-onboarding?
 
@@ -62,14 +62,14 @@ Beyond the initial sequence, contextual one-time tips appear when the user first
 ### Functional Requirements
 
 - **FR-001**: Onboarding MUST consist of inline tooltips anchored to specific UI elements — no modals, no full-screen wizards
-- **FR-002**: First-launch sequence MUST include at least 5 steps: Welcome, Dashboard, Command Bar, Timeline, Settings
+- **FR-002**: First-launch sequence MUST include at least 4 steps: Welcome (Home), Chat Bar (Ctrl+K), History, Settings
 - **FR-003**: Each tooltip MUST show: title, description (1–2 sentences), step counter ("3 of 5"), "Next" button, "Skip all" link
 - **FR-004**: Tooltip transitions MUST use fade (200ms) with no repositioning lag
 - **FR-005**: Tooltip positioning MUST auto-adjust if the target element moves (e.g., sidebar resize) using a resize observer
 - **FR-006**: Tooltips MUST NOT appear over transparent/empty areas — if the target element is hidden (lazy loaded), the tooltip waits up to 3 seconds, then skips to the next step
 - **FR-007**: Tooltips MUST be dismissible by: clicking "Next", clicking "Skip all", pressing Escape, or clicking the backdrop
 - **FR-008**: Onboarding state MUST be persisted in localStorage: `completedSteps: number[]`, `dismissedTips: string[]`, `completed: boolean`
-- **FR-009**: Contextual one-time tips MUST trigger on first use of specific features (dashboard customize, timeline expand, command bar search, graph zoom, agent panel first message)
+- **FR-009**: Contextual one-time tips MUST trigger on first use of specific features (history expand session, chat bar search)
 - **FR-010**: Contextual tips MUST include: title, description, "Got it" button, optional "Don't show this again" toggle, and an "x" close button
 - **FR-011**: Settings MUST include "Replay onboarding" button under General section
 - **FR-012**: A "?" icon in the status bar MUST show remaining unfinished steps when clicked (or "Onboarding complete" checkmark if done)

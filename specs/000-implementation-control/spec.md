@@ -17,7 +17,7 @@ This spec is the implementation control tower for the entire OSAI project. It de
 5. **Regression strategy** — how we guarantee nothing breaks when adding new specs
 6. **References** — pointers to the build guide (`docs/development/building.md`), testing guide (`docs/development/testing.md`), and validation commands
 
-This spec does NOT replace any other spec. It is a coordination layer that references all 59 specs (001–059) and the supporting documentation.
+This spec does NOT replace any other spec. It is a coordination layer that references all 64 specs (001–064) and the supporting documentation.
 
 ---
 
@@ -45,11 +45,20 @@ MVP 1.0 is called **"Personal Memory"** — a desktop application that captures 
 | 14 | **016** Session Detection | Knowledge | Group contiguous related activity into sessions |
 | 15 | **015** Project Detection | Knowledge | Auto-detect projects from event clusters |
 | 16 | **014** Graph Builder | Knowledge | Store entity relationships in the graph |
-| 17 | **018** Timeline View | UI | Chronological activity feed, filtering, search |
-| 18 | **024** Dashboard | UI | Home screen with activity overview and widgets |
-| 19 | **021** Command Bar | UI | Universal search, Ctrl+K, actions |
+| 17 | **018** History | UI | Chronological activity feed organized by sessions |
+| 18 | **024** Home | UI | Today summary, suggestion feed, quick note |
+| 19 | **021** Chat Bar | UI | Conversational interface, Ctrl+K, streaming responses |
 
 **Total: 19 specs for MVP 1.0**
+
+### Post-MVP Specs
+
+| Order | Spec | Area | Why After MVP |
+|-------|------|------|--------------|
+| 20 | **063** Capture Controls | Capture | Centralized control UI and scheduling — extends the tray controls from spec 010 |
+| 21 | **064** Background Agent Host | Agent | Event-driven agent runtime — powers all proactive features across AI agent specs 025-033 |
+
+**Total: 21 specs for MVP + core runtime**
 
 ### What MVP 1.0 Delivers
 
@@ -57,9 +66,9 @@ MVP 1.0 is called **"Personal Memory"** — a desktop application that captures 
 - Events stored locally in SQLite with full-text search
 - Entities extracted, events classified, sessions and projects detected
 - A knowledge graph of entities and relationships
-- A timeline view with filtering, search, and density modes
-- A dashboard with activity overview and customizable widgets
-- A command bar for universal search and actions
+- A History view with filtering, search, and density modes
+- A Home screen with today's summary, suggestion feed, and quick note
+- A Chat Bar for conversational interaction
 - A system tray for capture control
 - Consistent design system (light/dark/high-contrast themes, Inter typography, Lucide icons, responsive layout)
 
@@ -85,6 +94,14 @@ After Phase 0: Monorepo builds, protocol schemas exist, storage layer works, des
 
 After Phase 1: Events flowing in from browser, IDE, file system, and window focus. User can pause/resume capture from system tray.
 
+### Phase 1.5: Capture Controls
+
+```
+063
+```
+
+After Phase 1.5: Centralized Settings > Capture page with per-connector enable/disable/pause/resume, schedule support, and heartbeat health monitoring.
+
 ### Phase 2: Basic Knowledge (MVP Part 3)
 
 ```
@@ -99,7 +116,7 @@ After Phase 2: Entities extracted from events, events classified, sessions and p
 018 → 024 → 021
 ```
 
-After Phase 3: Desktop app with timeline, dashboard, and command bar. The user can see, search, and navigate their captured activity.
+After Phase 3: Desktop app with History, Home, and Chat Bar. The user can see, search, and navigate their captured activity.
 
 ### Phase 3.5: Extended UI
 
@@ -107,7 +124,7 @@ After Phase 3: Desktop app with timeline, dashboard, and command bar. The user c
 019 → 020 → 022 → 023
 ```
 
-After Phase 3.5: Projects view, interactive graph view, agent panel shell, context sidebar.
+After Phase 3.5: Topics (auto-clustered themes), Explore (discovery), Ask (conversation history), Now (awareness bar).
 
 ### Phase 4: Knowledge Engine Advanced
 
@@ -117,6 +134,14 @@ After Phase 3.5: Projects view, interactive graph view, agent panel shell, conte
 
 After Phase 4: Embeddings pipeline powers the recommendation engine. Related content suggestions, semantic search.
 
+### Phase 4.5: Agent Host
+
+```
+064
+```
+
+After Phase 4.5: Background agent host subscribes to event log, runs agents, builds suggestions, handles Save-to-KB and chat dispatch. Provides the runtime for all proactive features.
+
 ### Phase 5: AI Agents
 
 ```
@@ -125,29 +150,37 @@ After Phase 4: Embeddings pipeline powers the recommendation engine. Related con
 
 After Phase 5: MCP server exposes all capabilities. Summarizer, organizer, researcher, planner, and recommendation agents run on schedule or on demand. Agent marketplace for third-party extensions.
 
-### Phase 6: Sync & Cloud
+### Phase 6: Platform Features
+
+```
+060 → 061 → 062
+```
+
+After Phase 6: Auto-update mechanism, on-boarding tooltips, LLM provider abstraction layer.
+
+### Phase 7: Sync & Cloud
 
 ```
 034 → 035 → 036 → 037 → 038 → 039 → 040
 ```
 
-After Phase 6: Multi-device sync with CRDT conflict resolution. Cloud backup, user accounts, cloud dashboard, billing, E2EE.
+After Phase 7: Multi-device sync with CRDT conflict resolution. Cloud backup, user accounts, cloud dashboard, billing, E2EE.
 
-### Phase 7: Ecosystem
+### Phase 8: Ecosystem
 
 ```
 041 → 042 → 043 → 044 → 045 → 046 → 047 → 048 → 049
 ```
 
-After Phase 7: Python/Rust/Go SDKs published. Media, PDF, and API connectors available. Mobile app for timeline viewing. Protocol published as open standard. Community site with plugin registry.
+After Phase 8: Python/Rust/Go SDKs published. Media, PDF, and API connectors available. Mobile app for timeline viewing. Protocol published as open standard. Community site with plugin registry.
 
-### Phase 8: Enterprise
+### Phase 9: Enterprise
 
 ```
 050 → 051 → 052 → 053 → 054 → 055 → 056 → 057 → 058
 ```
 
-After Phase 8: Team context sharing, organizational knowledge graph, RBAC, audit logging, admin panel, SSO/SAML, on-premise deployment, analytics, enterprise SLA.
+After Phase 9: Team context sharing, organizational knowledge graph, RBAC, audit logging, admin panel, SSO/SAML, on-premise deployment, analytics, enterprise SLA.
 
 ---
 
@@ -224,8 +257,8 @@ Milestones mark integration points where the product becomes usable at a new lev
 | **M0: Scaffold** | 003 | `pnpm build` succeeds, Tauri window opens, monorepo structure intact |
 | **M1: Data In** | 001, 002, 004, 005, 006, 007, 008, 009, 010 | Events from browser/IDE/files/window stored in SQLite, queryable via CLI |
 | **M2: Understanding** | 012, 013, 014, 015, 016 | Entities extracted, events classified, sessions and projects detected, graph populated |
-| **M3: Desktop MVP** | 018, 024, 021, 059 | Desktop app with timeline, dashboard, command bar, design system. This is MVP 1.0. |
-| **M4: Full UI** | 019, 020, 022, 023 | All 7 UI views functional. Projects, graph, agent panel, context sidebar. |
+| **M3: Desktop MVP** | 018, 024, 021, 059 | Desktop app with History, Home, Chat Bar, design system. This is MVP 1.0. |
+| **M4: Full UI** | 019, 020, 022, 023 | All 7 UI views functional. Topics, Explore, Ask, Now. |
 | **M5: Smart** | 011, 017 | Embeddings + recommendation engine. Related content, semantic search. |
 | **M6: Agents** | 025, 026, 027, 028, 029, 030, 031, 032, 033 | AI agents running. MCP server active. Agent marketplace. |
 | **M7: Cloud** | 034, 035, 036, 037, 038, 039, 040 | Multi-device sync. Cloud backup. User accounts. Billing. E2EE. |
@@ -309,13 +342,13 @@ This table tracks progress across all specs. Updated as each spec completes its 
 | 015 | Project Detection | Knowledge | Not started | M2 |
 | 016 | Session Detection | Knowledge | Not started | M2 |
 | 017 | Recommendation Engine | Knowledge | Not started | M5 |
-| 018 | Timeline View | UI | Not started | M3 |
-| 019 | Projects View | UI | Not started | M4 |
-| 020 | Graph View | UI | Not started | M4 |
-| 021 | Command Bar | UI | Not started | M3 |
-| 022 | Agent Panel | UI | Not started | M4 |
-| 023 | Context Sidebar | UI | Not started | M4 |
-| 024 | Dashboard | UI | Not started | M3 |
+| 018 | History | UI | Not started | M3 |
+| 019 | Topics | UI | Not started | M4 |
+| 020 | Explore | UI | Not started | M4 |
+| 021 | Chat Bar | UI | Not started | M3 |
+| 022 | Ask | UI | Not started | M4 |
+| 023 | Now | UI | Not started | M4 |
+| 024 | Home | UI | Not started | M3 |
 | 025 | MCP Server | Agents | Not started | M6 |
 | 026 | Summarizer Agent | Agents | Not started | M6 |
 | 027 | Organizer Agent | Agents | Not started | M6 |
@@ -353,6 +386,9 @@ This table tracks progress across all specs. Updated as each spec completes its 
 | 059 | Design System | UI | Not started | M3 |
 | 060 | Auto-Update | Infrastructure | Not started | M3 |
 | 061 | Onboarding | UI | Not started | M3 |
+| 062 | LLM Integration | Infrastructure | Draft | M3 |
+| 063 | Capture Controls | Capture | Draft | M2 |
+| 064 | Agent Host | Agents | Draft | M5 |
 
 ---
 
@@ -397,6 +433,33 @@ See `specs/059-design-system/spec.md` for:
 
 - `specs/060-auto-update/spec.md`: Update mechanism, channels, rollout, crash rollback
 - `specs/061-onboarding/spec.md`: First-run inline tooltips, contextual tips, replay
+
+### LLM Integration
+
+See `specs/062-llm-integration/spec.md` for:
+- Provider abstraction layer (OpenAI, Anthropic, Ollama, Transformers.js)
+- Per-capability model routing and fallback chains
+- Token and cost tracking with SQLite persistence
+- Rate limiting, offline degradation, Ollama auto-detection
+- BYOK flow via OS keychain
+
+### Capture Controls
+
+See `specs/063-capture-controls/spec.md` for:
+- Centralized Settings > Capture page with per-connector list, toggles, schedules
+- Control signal IPC (enable/disable/pause/resume) sent from Rust core to each connector
+- Connector heartbeat protocol (status, events_today, errors)
+- Schedule model: always, work-hours, custom cron, pause-until
+- Per-connector config schema and inline settings panel
+
+### Agent Host
+
+See `specs/064-agent-host/spec.md` for:
+- Background Node.js sidecar subscribing to the event log
+- Proactive suggestion pipeline (topic focus, goal nudge, resumption, save confirmation, digest)
+- Save-to-KB flow: accepts content from any source, classifies to topic, pushes confirmation card
+- Chat dispatch: intent parsing, knowledge graph search, context prompt assembly, streaming response
+- Suggestion dedup (15 min), periodic event intake agent
 
 ### Agent Instructions
 

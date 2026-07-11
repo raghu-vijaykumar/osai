@@ -25,9 +25,31 @@ The planner agent analyzes the user's current context (open projects, recent act
 
 ---
 
-### User Story 2 - Daily Plan Generation (Priority: P2)
+### User Story 2 - Goal Management and Tracking (Priority: P1)
 
-Each morning (or at user's preferred time), the planner generates a daily plan: a prioritized list of suggested tasks for the day, based on the previous day's unfinished work, recurring patterns, upcoming deadlines, and the user's energy patterns (morning = deep work, afternoon = meetings/review). The plan appears in the dashboard.
+The user can create goals like "Read 30 minutes daily" or "Complete auth module by Friday". The goal engine tracks progress by matching events to goals — reading sessions count toward "Read 30 min daily", and events mentioning "auth" count toward the auth module goal. Progress is shown in the Now bar (spec 023). When a goal is falling behind, the planner schedules a nudge.
+
+**Why this priority**: Goals are the core building block of proactive suggestions. Without goals, the agent host has no basis to suggest anything meaningful. Goals also bridge capture (what you did) to intention (what you wanted to do).
+
+**Independent Test**: Create a goal "Write tests for 30 min daily". Work on test files for 15 min. Verify the goal shows 15/30 min in the Now bar. Skip a day. Verify a nudge appears the next morning: "You missed your test-writing goal yesterday. 15 min now?"
+
+**Acceptance Scenarios**:
+
+1. **Given** a goal "Read 30 min daily", **When** the user opens PDFs or documentation for 12 minutes, **Then** goal progress shows 12/30 min
+2. **Given** a goal falling behind (e.g., 5/30 min at end of day), **When** the agent host runs the suggestion loop, **Then** a goal nudge is created: "You missed your [goal] target yesterday. [suggested duration] now?"
+3. **Given** a goal that has been inactive for 7+ days, **When** the agent host reviews goals, **Then** it suggests archiving or removing the goal: "You haven't worked on 'Learn French' in 7 days. Archive it?"
+
+**Goal CRUD**:
+
+1. **Given** the user is on the Topics/Home screen, **When** they click "Add Goal", **Then** a form opens with fields: title, target (duration or sessions or date), period (daily/weekly/custom), optional trigger keywords for auto-matching
+2. **Given** a goal, **When** the user clicks "Edit", **Then** the goal form opens pre-filled for editing
+3. **Given** a goal, **When** the user clicks "Delete", **Then** a confirmation dialog appears; confirming removes the goal permanently
+
+---
+
+### User Story 3 - Daily Plan Generation (Priority: P2)
+
+Each morning (or at user's preferred time), the planner generates a daily plan: a prioritized list of suggested tasks for the day, based on the previous day's unfinished work, recurring patterns, upcoming deadlines, and the user's energy patterns (morning = deep work, afternoon = meetings/review). The plan appears on Home.
 
 **Why this priority**: A daily plan saves users 10-15 minutes of planning time. It also helps them start the day with direction.
 
@@ -101,21 +123,28 @@ The planner tracks whether the user follows the suggested plan. If the user igno
 
 - **FR-001**: Planner agent MUST analyze user context and suggest prioritized tasks
 - **FR-002**: Task suggestions MUST include: title, description, rationale (why this task), priority, estimated duration, and related entities
-- **FR-003**: Planner MUST generate a daily plan at a configurable time (default 8 AM)
-- **FR-004**: Daily plan MUST include: continued tasks from yesterday, recurring tasks, new suggestions, and priority ordering
-- **FR-005**: Planner MUST estimate task duration based on historical user velocity for similar tasks
-- **FR-006**: Time estimates MUST include: estimated duration, confidence level, and similar past tasks used for estimation
-- **FR-007**: Planner MUST warn if daily schedule exceeds available time
-- **FR-008**: Planner MUST generate project roadmap suggestions with milestones and tasks
-- **FR-009**: Project roadmaps MUST be derived from project event analysis
-- **FR-010**: Planner MUST track plan adherence and adapt future suggestions
-- **FR-011**: Plans MUST auto-update at end of day: mark completed, move incomplete, add unplanned
-- **FR-012**: Planner MUST learn from repeated task-type rejection and adjust suggestions
-- **FR-013**: Planner MUST handle users with no historical data (fall back to default estimates)
-- **FR-014**: Planner MUST be available as an MCP tool via the MCP server
+- **FR-003**: Planner MUST provide goal CRUD: create, read, update, delete goals with title, target, period, and optional trigger keywords
+- **FR-004**: Planner MUST match events to goals based on trigger keywords — events whose content/app/file mentions a keyword count toward that goal's progress
+- **FR-005**: Planner MUST compute goal progress as a fraction (current/target) and expose it to the Now bar (spec 023) via IPC
+- **FR-006**: Planner MUST flag goals below 50% of target at end of period for nudge generation by the agent host (spec 064)
+- **FR-007**: Planner MUST suggest archiving goals with no activity for 7+ days
+- **FR-008**: Planner MUST generate a daily plan at a configurable time (default 8 AM)
+- **FR-009**: Daily plan MUST include: continued tasks from yesterday, recurring tasks, new suggestions, and priority ordering
+- **FR-010**: Planner MUST estimate task duration based on historical user velocity for similar tasks
+- **FR-011**: Time estimates MUST include: estimated duration, confidence level, and similar past tasks used for estimation
+- **FR-012**: Planner MUST warn if daily schedule exceeds available time
+- **FR-013**: Planner MUST generate project roadmap suggestions with milestones and tasks
+- **FR-014**: Project roadmaps MUST be derived from project event analysis
+- **FR-015**: Planner MUST track plan adherence and adapt future suggestions
+- **FR-016**: Plans MUST auto-update at end of day: mark completed, move incomplete, add unplanned
+- **FR-017**: Planner MUST learn from repeated task-type rejection and adjust suggestions
+- **FR-018**: Planner MUST handle users with no historical data (fall back to default estimates)
+- **FR-019**: Planner MUST be available as an MCP tool via the MCP server
 
 ### Key Entities
 
+- **Goal**: A user-defined intention. Attributes: id, title, target (number), unit (minutes/sessions/events), period (daily/weekly/custom), triggerKeywords (array of strings for event matching), status (active/archived/deleted), createdAt, updatedAt.
+- **GoalProgress**: Computed progress for a goal. Attributes: goalId, current (number matched), target, fraction (0-1), periodStart, periodEnd, status (on-track/falling-behind/missed), lastMatchedAt.
 - **PlannedTask**: A task in a plan. Attributes: id, planId, title, description, rationale, priority, estimatedDuration, actualDuration, status (suggested/planned/in-progress/completed/deferred/skipped), source (suggestion/recurring/continued/manual), projectId, relatedEventIds, createdAt.
 - **DailyPlan**: A plan for a day. Attributes: id, date, tasks (ordered), totalEstimatedDuration, totalAvailableTime, overcommitted (bool), generatedAt, adaptedAt, status (active/completed/archived).
 - **ProjectRoadmap**: A suggested roadmap for a project. Attributes: id, projectId, milestones (array of {name, description, tasks, targetDate}), confidence, generatedAt.
@@ -143,4 +172,5 @@ The planner tracks whether the user follows the suggested plan. If the user igno
 - Plan adaptation runs at end of day (configurable, default midnight)
 - Project roadmaps require minimum 20 events in a project before generation
 - Tasks are not synced to external task managers (out of scope for v1)
+- Any LLM-based task suggestion or plan generation uses the provider layer (spec 062)
 - Source code lives at `agents/planner/` in the monorepo

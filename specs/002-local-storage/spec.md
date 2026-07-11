@@ -58,7 +58,7 @@ All storage operations go through a single `StorageAdapter` interface that abstr
 
 ### User Story 4 - Schema Migration (Priority: P2)
 
-The storage layer manages its own schema versioning and migration. On first use, tables are created automatically. Schema updates are applied incrementally.
+The storage layer manages its own schema versioning and migration using `refinery` (Rust core) and `umzug` (Node.js sidecars). On first use, tables are created automatically via embedded SQL migration files. Schema updates are applied incrementally with checksum verification.
 
 **Why this priority**: As the event schema evolves, storage schemas must evolve with it without manual DB administration.
 
@@ -66,8 +66,9 @@ The storage layer manages its own schema versioning and migration. On first use,
 
 **Acceptance Scenarios**:
 
-1. **Given** a fresh installation, **When** the storage layer initializes, **Then** all required tables exist with correct schema version recorded
-2. **Given** a database at schema v1, **When** the storage layer initializes with v2 code, **Then** migration runs and the schema version is updated to v2
+1. **Given** a fresh installation, **When** the storage layer initializes, **Then** all required tables exist with correct schema version recorded in the `osai_schema_versions` table
+2. **Given** a database at schema v1, **When** the storage layer initializes with v2 migration files, **Then** migration runs, the checksum is validated, and the schema version is updated to v2
+3. **Given** a migration with an invalid checksum (tampered migration file), **When** the storage layer initializes, **Then** it fails with a checksum error and does not apply any pending migrations
 
 ---
 
@@ -96,6 +97,10 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 - What happens when storage runs out of disk space?
 - How are embedding dimensions handled when the model changes?
 - What happens when FTS5 encounters non-ASCII text (Unicode, emoji)?
+- How are migrations coordinated between the Rust core and Node.js sidecars when they share the same database file?
+- What happens if the Rust core applies a migration that the Node.js sidecar hasn't loaded yet?
+- How is a migration rollback triggered if the app crashes mid-migration?
+- How are migration conflicts resolved if two developers add migrations with the same version number?
 
 ## Requirements
 
@@ -106,7 +111,7 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 - **FR-003**: System MUST create indexes on `source`, `type`, `project`, `session`, and `timestamp` for query performance
 - **FR-004**: System MUST support JSON extraction queries on the `payload` column using SQLite's `json_extract()`
 - **FR-005**: System MUST create an FTS5 virtual table on event payload text content for full-text search
-- **FR-006**: System MUST implement a schema version table and migration runner
+- **FR-006**: System MUST use `refinery` (Rust core, with rusqlite) and `umzug` (Node.js sidecars, with better-sqlite3) as the migration runners — SQL migration files are the single source of truth, shared across both layers
 - **FR-007**: System MUST store vector embeddings in a dedicated table with columns: `event_id` (TEXT FK), `embedding` (BLOB), `model` (TEXT), `dimensions` (INT)
 - **FR-008**: System MUST support cosine similarity search against stored embeddings
 - **FR-009**: System MUST expose a `StorageAdapter` interface with methods: `store()`, `storeBatch()`, `get()`, `query()`, `search()`, `delete()`, `deleteBefore()`
@@ -118,23 +123,35 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 - **FR-015**: System MUST provide a `close()` method for graceful shutdown
 - **FR-016**: System MUST support in-memory SQLite for testing via `:memory:`
 
+#### Migration Tooling
+
+- **FR-017**: SQL migration files MUST live in `crates/osai-core/migrations/` — this is the authoritative source
+- **FR-018**: Migration files MUST follow the `<VERSION>__<description>.sql` naming convention (e.g., `V1__initial_schema.sql`, `V2__add_projects_table.sql`)
+- **FR-019**: Each migration MUST be idempotent — rerunning the same migration must be safe (use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` where supported, or guard with schema version checks)
+- **FR-020**: Before applying ANY migration, the system MUST create a backup copy of the database file at `~/.osai/data/osai.db.bak` (overwrite the previous backup)
+- **FR-021**: If a migration fails (SQL error, crash, timeout), the system MUST restore from the pre-migration backup and report the failure
+- **FR-022**: System MUST expose a CLI command `osai db:migrate` that runs all pending migrations and reports the current schema version
+- **FR-023**: System MUST expose a CLI command `osai db:version` that prints the current schema version and applied migration history
+- **FR-024**: On startup, each process (Rust core, Node.js sidecars) MUST run pending migrations automatically before serving any requests
+- **FR-025**: A migration MUST fail if its checksum differs from the previously recorded checksum (detect tampering or race)
+
 #### Data Retention
 
-- **FR-017**: System MUST support configurable data retention by age (days) and total storage size (MB/GB)
-- **FR-018**: Default retention MUST be: keep all data (no automatic deletion) — user must explicitly enable pruning
-- **FR-019**: When enabled, pruning MUST run on a schedule (default: daily at 3 AM local time) and respect both age and size limits
-- **FR-020**: Pruning MUST use a two-phase approach: soft-delete (mark as `deleted_at` timestamp) then hard-delete after a configurable grace period (default 7 days)
-- **FR-021**: Before hard-delete, pruned events MUST be optionally archived to a compressed file (`~/.osai/archive/{date}-events.jsonl.zst`)
-- **FR-022**: Archive format MUST be newline-delimited JSON (JSONL) compressed with Zstandard — human-readable with standard tools
-- **FR-023**: Pruning MUST NOT delete sessions, projects, or entities — only events beyond the retention window
-- **FR-024**: System MUST provide a dry-run mode: `storage.previewPrune()` returns count of events that would be pruned without deleting anything
-- **FR-025**: Retention config MUST be exposed in Settings > Storage with readout: "1.2 GB used — 0 events pruned" and controls for age limit, size limit, and archive toggle
+- **FR-026**: System MUST support configurable data retention by age (days) and total storage size (MB/GB)
+- **FR-027**: Default retention MUST be: keep all data (no automatic deletion) — user must explicitly enable pruning
+- **FR-028**: When enabled, pruning MUST run on a schedule (default: daily at 3 AM local time) and respect both age and size limits
+- **FR-029**: Pruning MUST use a two-phase approach: soft-delete (mark as `deleted_at` timestamp) then hard-delete after a configurable grace period (default 7 days)
+- **FR-030**: Before hard-delete, pruned events MUST be optionally archived to a compressed file (`~/.osai/archive/{date}-events.jsonl.zst`)
+- **FR-031**: Archive format MUST be newline-delimited JSON (JSONL) compressed with Zstandard — human-readable with standard tools
+- **FR-032**: Pruning MUST NOT delete sessions, projects, or entities — only events beyond the retention window
+- **FR-033**: System MUST provide a dry-run mode: `storage.previewPrune()` returns count of events that would be pruned without deleting anything
+- **FR-034**: Retention config MUST be exposed in Settings > Storage with readout: "1.2 GB used — 0 events pruned" and controls for age limit, size limit, and archive toggle
 
 ### Key Entities
 
 - **StoredEvent**: A database row representing a `ContextEvent`. Columns: `id`, `source`, `type`, `payload` (JSON string), `project`, `session`, `timestamp`, `created_at`.
 - **EventEmbedding**: A vector embedding associated with a stored event. Attributes: `event_id`, `embedding` (float32 array as BLOB), `model` (embedding model identifier), `dimensions` (number).
-- **SchemaMigration**: A versioned migration step. Attributes: `version` (integer), `name` (string), `applied_at` (timestamp), `checksum` (hash of SQL).
+- **SchemaMigration**: A versioned migration step tracked by `refinery`/`umzug`. Attributes: `version` (integer), `name` (string), `applied_at` (timestamp), `checksum` (hash of SQL).
 - **StorageAdapter**: The unified interface. Exposes typed methods for all storage operations with pluggable backends.
 - **QueryResult**: Return type for query operations. Shape: `{ events: StoredEvent[], total: number }`.
 - **SearchResult**: Return type for semantic search. Shape: `{ event: StoredEvent, score: number }[]`.
@@ -159,5 +176,10 @@ The storage layer supports bulk insert for batch event ingestion and paginated q
 - Vector search is done in-process (brute-force cosine similarity) — no external vector DB for Phase 0
 - The `payload` column stores JSON text; SQLite JSON functions handle extraction
 - Database file location is configurable via environment variable `OSAI_DB_PATH`
-- Schema migrations use integer version numbers and forward-only (no rollback in Phase 0)
-- The storage layer is not responsible for backup — that comes in Phase 5
+- Rust core uses `refinery` (embedded SQL migrations compiled into the binary at build time via `refinery_macros`)
+- Node.js sidecars use `umzug` with `better-sqlite3` — reads the same `.sql` migration files from `crates/osai-core/migrations/` (copied or symlinked into the sidecar package at build time)
+- Migration files are versioned with integer prefixes (e.g., `V1__`, `V2__`) — both `refinery` and `umzug` support this convention
+- Rollback is handled by pre-migration SQLite file backup, NOT by SQL `DOWN` migrations — this avoids the complexity of writing and testing down migrations while still enabling recovery
+- The `osai db:migrate` CLI command is implemented in the Rust core and delegates to `refinery`; Node sidecars run their own pending migrations on startup independently
+- If a migration fails, the process exits with a non-zero code — the launcher (Tauri shell) detects this, restores from `.bak`, and retries once before crashing with a user-visible error
+- The storage layer manages its own backup — backup before every migration, not a general-purpose backup solution

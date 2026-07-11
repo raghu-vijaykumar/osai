@@ -12,7 +12,7 @@
 
 ### User Story 1 - Proactive Content Recommendations (Priority: P1)
 
-The recommendation agent watches the user's current activity and proactively suggests related content. When the user is reading about a topic, the agent surfaces a toast notification: "You read about this 2 weeks ago — see your notes." Recommendations appear in the dashboard "Recommended" section and as subtle in-app notifications.
+The recommendation agent watches the user's current activity and proactively suggests related content. When the user is reading about a topic, the agent surfaces a toast notification: "You read about this 2 weeks ago — see your notes." Recommendations appear in the Home "Recommended" section and as subtle in-app notifications.
 
 **Why this priority**: Proactive recommendations transform OSAI from a passive recorder into an active assistant. Users discover connections they'd otherwise miss.
 
@@ -100,7 +100,7 @@ Users can provide feedback on recommendations: 👍 (relevant), 👎 (not releva
 
 - **FR-001**: Recommendation agent MUST proactively surface related content based on current user activity
 - **FR-002**: Content recommendations MUST appear within 30 seconds of relevant activity
-- **FR-003**: Recommendations MUST be shown as in-app notifications and in the dashboard "Recommended" section
+- **FR-003**: Recommendations MUST be shown as in-app notifications and in the Home "Recommended" section
 - **FR-004**: Agent MUST suggest next actions based on user patterns and context
 - **FR-005**: Next action suggestions MUST include: description, reason, and action button
 - **FR-006**: Agent MUST detect knowledge gaps — entities with high appearance count but no project/notes
@@ -144,4 +144,5 @@ Users can provide feedback on recommendations: 👍 (relevant), 👎 (not releva
 - Weekly digest generated on the same schedule as the weekly summary (spec 026)
 - Notifications use the in-app notification system
 - ML model for recommendations is simple (weighted scoring) initially, can be upgraded later
+- Any LLM-based gap analysis or relevance scoring uses the provider layer (spec 062)
 - Source code lives at `agents/recommender/` in the monorepo

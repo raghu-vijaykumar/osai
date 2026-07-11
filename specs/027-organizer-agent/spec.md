@@ -84,7 +84,7 @@ The organizer provides quick curation actions directly on events: "Remove from t
 **Acceptance Scenarios**:
 
 1. **Given** an event in the timeline, **When** the user selects "Mark as private", **Then** the event is tagged with `visibility: private` and excluded from all non-UI queries (MCP, agents, exports)
-2. **Given** an event, **When** the user selects "Highlight", **Then** the event is pinned with a star icon and appears in a "Highlights" section on the dashboard
+2. **Given** an event, **When** the user selects "Highlight", **Then** the event is pinned with a star icon and appears in a "Highlights" section on Home
 
 ---
 
@@ -150,4 +150,5 @@ The organizer provides quick curation actions directly on events: "Remove from t
 - Users can create unlimited custom rules
 - Custom rules are evaluated client-side for speed, AI tagging is server-side
 - Organizer learns from user feedback via a simple Bayesian confidence adjustment
+- AI tagging and classification use the LLM provider layer (spec 062) when transformer models are enabled
 - Source code lives at `agents/organizer/` in the monorepo

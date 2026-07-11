@@ -46,11 +46,11 @@ The Python SDK includes an Agent base class for building OSAI agents in Python. 
 
 **Why this priority**: Python is a popular language for AI/ML development. Enabling Python agents expands the ecosystem significantly.
 
-**Independent Test**: Create a Python agent that exposes a tool `hello_world(name: str) -> str`. Install it as a local agent, run it via the scheduling system, and call `hello_world("OSAI")` from the agent panel. Verify it returns "Hello, OSAI!"
+**Independent Test**: Create a Python agent that exposes a tool `hello_world(name: str) -> str`. Install it as a local agent, run it via the scheduling system, and call `hello_world("OSAI")` from the Chat Bar. Verify it returns "Hello, OSAI!"
 
 **Acceptance Scenarios**:
 
-1. **Given** the Python Agent SDK, **When** a developer creates a class extending `BaseAgent` with a `@tool` decorator, **Then** the tool is automatically registered with the MCP server and available in the agent panel
+1. **Given** the Python Agent SDK, **When** a developer creates a class extending `BaseAgent` with a `@tool` decorator, **Then** the tool is automatically registered with the MCP server and available in the Chat Bar
 2. **Given** a Python agent is running, **When** it publishes events, **Then** events are sent through the Context Protocol and appear in the timeline
 
 ---

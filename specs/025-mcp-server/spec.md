@@ -152,4 +152,5 @@ Some agent operations (e.g., research, planning) may take significant time. The 
 - Long-running jobs use an in-memory job queue with persistence to SQLite
 - Streaming responses use MCP's native streaming capability
 - Server auto-discovers agents at startup via the agent registry
+- MCP tools that involve LLM calls (e.g., summarization, research) use the provider abstraction layer (spec 062) for routing
 - Source code lives at `mcp/server/` in the monorepo

@@ -116,8 +116,12 @@ The extension captures terminal commands run and task execution (build, test, li
 - **FR-015**: Extension MUST include a status bar item showing capture status (active/paused/error)
 - **FR-016**: Extension MUST provide a `OSAI: Toggle Capture` command accessible from command palette
 - **FR-017**: Extension MUST provide a `OSAI: Show Recent Activity` command showing last 20 published events
-- **FR-018**: Extension MUST reconnect to native messaging host if the process restarts
+- **FR-018**: Extension MUST maintain a persistent named pipe / Unix socket connection to the Rust core — auto-reconnect with exponential backoff (1s, 2s, 4s, max 30s) on disconnect
 - **FR-019**: Extension MUST contribute configuration settings: `osai.enabled`, `osai.capture.gitEvents`, `osai.capture.heartbeat`, `osai.capture.terminal`
+- **FR-020**: Extension MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via its IPC connection — see spec 063 for signal format. On `disable`, close the socket and stop all capture. On `pause`, stop publishing but keep the connection open (may buffer up to 100 events). On `resume`, flush buffer and resume.
+- **FR-021**: Extension MUST send a heartbeat to the Rust core every 60 seconds via IPC, containing `events_today`, `last_event_at`, and any errors — see spec 063 FR-027
+- **FR-022**: Extension MUST register a `config_schema` at source registration time exposing its git/heartbeat/terminal toggles as configurables — see spec 063 FR-014
+- **FR-023**: Extension MUST provide a "Save to Knowledge Base" context menu item on files and text selections — clicking publishes a `kb.save` event with the file path or selected text, language, and project info to the agent host (spec 064) for classification and storage
 
 ### Key Entities
 
@@ -144,7 +148,7 @@ The extension captures terminal commands run and task execution (build, test, li
 
 - Extension targets VSCode 1.85+ and Cursor
 - Published to VS Code Marketplace
-- Communication with OSAI via native messaging host (same binary as browser extension)
+- Communication with OSAI via the `@osai/protocol` SDK directly — VS Code extensions run in Node.js and can open named pipe / Unix socket connections without a bridge binary. The SDK handles discovery (`~/.osai/runtime.json`), connection, registration, publish, and reconnection — see protocol spec §7.
 - Git events use VSCode's built-in Git extension API (`git` API from `vscode.git`)
 - File content is NOT stored in events — only metadata (path, language, size, line count)
 - Terminal command sanitization strips environment variables and arguments that look like secrets (tokens, passwords, keys)

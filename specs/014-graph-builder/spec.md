@@ -44,7 +44,7 @@ The graph builder infers relationships between entities that share events in com
 
 The graph builder exposes a query API for retrieving subgraphs, traversing relationships, and finding paths between entities. Queries support depth limits, type filters, and pagination.
 
-**Why this priority**: The graph is only useful if it's queryable. UI components (graph view, context sidebar, command bar) and agents all need to traverse the graph efficiently.
+**Why this priority**: The graph is only useful if it's queryable. UI components (Explore, Now bar, Chat Bar) and agents all need to traverse the graph efficiently.
 
 **Independent Test**: Query "find path from 'Kubernetes' to 'AWS'" and verify the returned path includes intermediate nodes (e.g., "Kubernetes" → "EKS" → "AWS") with correct edge types.
 

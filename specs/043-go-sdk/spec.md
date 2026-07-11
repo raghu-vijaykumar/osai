@@ -61,7 +61,7 @@ The Go SDK includes an Agent framework for building OSAI agents in Go. Agents im
 
 **Why this priority**: Go's concurrency model is well-suited for long-running agent processes.
 
-**Independent Test**: Create a Go agent with a tool `hello(name string) string`. Register it as a local agent, call it from the agent panel, and verify it responds correctly.
+**Independent Test**: Create a Go agent with a tool `hello(name string) string`. Register it as a local agent, call it from the Chat Bar, and verify it responds correctly.
 
 **Acceptance Scenarios**:
 

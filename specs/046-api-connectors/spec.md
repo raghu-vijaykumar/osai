@@ -102,22 +102,89 @@ Google connectors capture activity from: Gmail (email sent/received, label chang
 
 ### Functional Requirements
 
-- **FR-001**: Each API connector MUST authenticate via OAuth 2.0
-- **FR-002**: GitHub connector MUST capture: push, PR (open/close/review), issue (create/comment), star
-- **FR-003**: GitHub events MUST include: repo, branch, title/description, URL, timestamp
-- **FR-004**: Slack connector MUST capture: messages, thread replies, reactions, file uploads
-- **FR-005**: Slack events MUST include: channel, workspace, message preview, thread info
-- **FR-006**: Slack connector MUST exclude private/DM channels by default
-- **FR-007**: Notion connector MUST capture: page views, edits, comments
-- **FR-008**: Notion events MUST include: page title, parent, workspace, URL
-- **FR-009**: Linear connector MUST capture: issue (create/update/complete), comments, sprint changes
-- **FR-010**: Linear events MUST include: issue title, team, project, status, priority
-- **FR-011**: Google connectors MUST support: Gmail, Calendar, Drive, Docs
-- **FR-012**: Google scopes MUST be independently selectable by the user
-- **FR-013**: All connectors MUST handle OAuth token refresh automatically
-- **FR-014**: All connectors MUST respect API rate limits (exponential backoff, queuing)
-- **FR-015**: Sensitive content MUST be handled according to user privacy settings
-- **FR-016**: Connectors MUST poll for new events at configurable intervals (default: 2 minutes)
+- **FR-001**: Each API connector MUST authenticate via OAuth 2.0 with PKCE
+- **FR-002**: All connectors MUST handle OAuth token refresh automatically (store refresh token in OS keychain)
+- **FR-003**: All connectors MUST respect API rate limits (exponential backoff, queuing)
+- **FR-004**: Connectors MUST poll for new events at configurable intervals (default: 2 minutes)
+- **FR-005**: Sensitive content MUST be handled according to user privacy settings
+- **FR-006**: Each connector MUST publish events as its own Context Protocol source via `@osai/protocol` SDK over named pipe / Unix socket
+- **FR-007**: Each connector MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via IPC — see spec 063. On `disable`, stop all API polling and clear timers. On `pause`, stop polling but keep OAuth tokens alive. On `resume`, resume polling from the last checkpoint.
+- **FR-008**: Each connector MUST send a heartbeat to the Rust core every 60 seconds via IPC, containing `events_today`, `last_event_at`, `services_connected`, and any errors (rate limit hits, auth failures) — see spec 063 FR-027
+- **FR-009**: Each connector MUST register a `config_schema` at source registration time exposing its service-specific settings (polling interval, DM inclusion toggle) as configurables — see spec 063 FR-014
+
+### Per-Tool Connector Specifications
+
+#### GitHub
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.github` |
+| **OAuth scopes** | `repo`, `read:org`, `read:user` |
+| **Auth flow** | OAuth device flow (no redirect URL needed) — user gets a code at `https://github.com/login/device`. OSAI polls `https://github.com/login/oauth/access_token` until authorized. |
+| **API used** | REST API (`GET /user/events`, `GET /repos/{owner}/{repo}/commits`, `GET /repos/{owner}/{repo}/pulls`, `GET /notifications`) |
+| **Polling** | `GET /user/events` every 2 minutes. Events deduplicated by `event.id`. Commits fetched per-repo after push event detected. |
+| **Events captured** | `github.push` (commits, repo, branch, messages), `github.pr.opened`/`.closed`/`.reviewed` (title, description, files), `github.issue.opened`/`.commented` (title, body), `github.star` |
+| **Dedup key** | GitHub event ID (`event.id`) |
+| **Rate limit** | 5,000 req/hr authenticated. OSAI stays under 200 req/hr per user (polling 2 min = 30 req/hr + sync overhead). |
+| **Complexity** | ~400 lines — OAuth device flow + event polling + rate limit tracking |
+
+#### Slack
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.slack` |
+| **OAuth scopes** | `channels:history`, `channels:read`, `groups:history` (private channels), `users:read`, `reactions:read`, `team:read` |
+| **Auth flow** | OAuth 2.0 with redirect to OSAI's local HTTP callback server (`http://127.0.0.1:8400/oauth/slack/callback`). User clicks "Install to Workspace" in browser. |
+| **API used** | Web API (`conversations.history`, `conversations.list`, `users.info`). Supports Slack Events API (real-time via WebSocket or webhook) but for MVP, polling is simpler. |
+| **Polling** | `GET /conversations.history` for each selected public channel every 2 minutes. Cursor-based pagination using `response_metadata.next_cursor`. |
+| **Events captured** | `slack.message` (channel, user, text preview, thread_ts), `slack.reaction` (emoji, message, channel), `slack.file_uploaded` (filename, type, channel) |
+| **Dedup key** | Slack event `ts` (timestamp-based unique ID per channel) |
+| **Private channels** | Excluded by default. User must explicitly opt-in per channel via the OSAI connector settings UI. |
+| **Rate limit** | "Tier 3" — 50+ req/min. OSAI stays under 30 req/min. |
+| **Complexity** | ~500 lines — OAuth callback server + paginated conversation history + dedup |
+
+#### Notion
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.notion` |
+| **OAuth scopes** | Notion OAuth grants access to specific workspaces + pages. No fine-grained scope selection — user controls page access during OAuth. |
+| **Auth flow** | OAuth 2.0 with redirect to OSAI's local callback server (`http://127.0.0.1:8400/oauth/notion/callback`). User selects which pages/workspaces to share. |
+| **API used** | Notion REST API (`POST /search` to find accessible pages, `GET /blocks/{id}/children` for content, `POST /comments` for comments). |
+| **Polling** | `POST /search` every 2 minutes to find recently updated pages (filter: `{timestamp: "last_edited_time", direction: "descending"}`). Then fetch content for changed pages + check comments. |
+| **Events captured** | `notion.page_viewed` (page title, workspace, URL, last editor), `notion.page_edited` (page ID, changes summary), `notion.comment_added` (page, comment text, author) |
+| **Dedup key** | Page `last_edited_time` (ISO 8601 string, compare timestamps) |
+| **Limitations** | Notion API is slow (~1-3s per page content fetch). No webhook support — polling only. Text content is limited (Notion API returns block-level content, no full page text). |
+| **Rate limit** | 3 req/sec per integration. OSAI stays under 1 req/sec. |
+| **Complexity** | ~350 lines — OAuth + search-based polling + block content fetching |
+
+#### Linear
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.linear` |
+| **OAuth scopes** | `read`, `issues:read`, `comments:read` |
+| **Auth flow** | OAuth 2.0 with redirect to OSAI's local callback server (`http://127.0.0.1:8400/oauth/linear/callback`). |
+| **API used** | Linear GraphQL API (`issues(filter: {updatedAt: {gt: "..."}}) { nodes { title, description, state, assignee, team, project, priority, labels, comments { nodes { body } } } }`). |
+| **Polling** | GraphQL query every 2 minutes: `issues(filter: {updatedAt: {after: $lastSync}})` ordered by `updatedAt`. Cursor pagination with `first: 50`. |
+| **Events captured** | `linear.issue.created`, `.updated`, `.completed` (title, team, project, status, priority, assignee), `linear.comment.added` (issue, comment body preview) |
+| **Dedup key** | Issue `updatedAt` timestamp (polling catches all changes since last check) |
+| **Rate limit** | 1,000 req/min per token. OSAI stays under 30 req/min. |
+| **Complexity** | ~350 lines — OAuth + GraphQL client + cursor pagination |
+
+#### Google
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.google` (sub-source per service: `.gmail`, `.calendar`, `.drive`, `.docs`) |
+| **OAuth scopes** | `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/calendar.events.readonly`, `https://www.googleapis.com/auth/drive.readonly`, `https://www.googleapis.com/auth/documents.readonly` |
+| **Auth flow** | OAuth 2.0 with redirect to OSAI's local callback server (`http://127.0.0.1:8400/oauth/google/callback`). User selects which scopes to grant via Google's consent screen. |
+| **API used** | Gmail: `GET /gmail/v1/users/me/messages?q=after:{timestamp}` (message IDs + snippet). Calendar: `GET /calendar/v3/calendars/primary/events?timeMin={lastSync}`. Drive: `GET /drive/v3/changes?pageToken={token}` (push-based via `changes.watch` where available). Docs: `GET /docs/v1/documents/{id}` (content on demand). |
+| **Polling** | Gmail: every 2 minutes, fetch message IDs since last sync, then fetch full message content for new ones. Calendar: every 5 minutes, fetch events updated since last check. Drive: use `changes` API with stored `pageToken` — push-based, or fall back to 5 min polling. Docs: on-demand when a Drive change notification triggers. |
+| **Events captured** | `google.gmail.message` (subject, from, snippet, thread), `google.calendar.event` (title, start, end, attendees, description), `google.drive.file_changed` (name, mimeType, modifiedTime), `google.docs.opened`/.`edited` (title, collaborator count, word count) |
+| **Dedup key** | Service-specific: Gmail `message.id`, Calendar `event.id` + `updated`, Drive `change.id` |
+| **Rate limit** | Gmail: 250 quota units/user/sec. Calendar: 10,000 requests/day. Drive: 10,000 requests/day. OSAI usage is well under all limits. |
+| **Complexity** | ~800 lines (all 4 services combined) — shared OAuth + per-service poller + push channel management |
 
 ### Key Entities
 

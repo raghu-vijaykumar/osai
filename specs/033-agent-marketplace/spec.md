@@ -12,17 +12,17 @@
 
 ### User Story 1 - Browse and Install Agents (Priority: P1)
 
-Users can open the Agent Marketplace from the Agent Panel and browse available agents. Agents are listed with name, description, author, version, rating, and download count. Each agent has a detail page with screenshots, permission requirements, reviews, and a "Install" button. Installation is one-click and sets up the agent with default permissions.
+Users can open the Agent Marketplace from Settings > Agent Manager and browse available agents. Agents are listed with name, description, author, version, rating, and download count. Each agent has a detail page with screenshots, permission requirements, reviews, and an "Install" button. Installation is one-click and sets up the agent with default permissions.
 
 **Why this priority**: The marketplace is the entry point for the entire plugin ecosystem. Without it, users can't discover or install third-party agents.
 
-**Independent Test**: Open the Agent Marketplace, browse to "Trending" tab. Find an agent "Code Review Assistant", click it, verify the detail page shows: description ("Automatically reviews your code changes"), author ("Community"), version (1.0.0), rating (4.5 stars, 23 reviews), required permissions (read: file events, write: review comments). Click "Install" and verify the agent appears in the Agent Panel within 5 seconds.
+**Independent Test**: Open the Agent Marketplace from Settings, browse to "Trending" tab. Find an agent "Code Review Assistant", click it, verify the detail page shows: description ("Automatically reviews your code changes"), author ("Community"), version (1.0.0), rating (4.5 stars, 23 reviews), required permissions (read: file events, write: review comments). Click "Install" and verify the agent appears in the Agent Manager within 5 seconds.
 
 **Acceptance Scenarios**:
 
 1. **Given** the marketplace is open, **When** the user views the agent list, **Then** agents are shown in a grid with name, author icon, rating, and install count, sorted by "Featured" by default
 2. **Given** an agent detail page, **When** the user clicks "Install", **Then** a permission review dialog shows the agent's required permissions with Accept/Decline buttons
-3. **Given** the user accepts permissions, **When** installation completes, **Then** the agent appears in the Agent Panel with "new" badge and is ready to use
+3. **Given** the user accepts permissions, **When** installation completes, **Then** the agent appears in the Agent Manager with "new" badge and is ready to use
 
 ---
 
@@ -54,7 +54,7 @@ Third-party agents run in a sandboxed environment with limited system access. Th
 
 1. **Given** a third-party agent is running, **When** it attempts to access a file outside its assigned directory, **Then** the sandbox blocks the access and logs a violation
 2. **Given** a third-party agent, **When** it attempts to make a network request to an undeclared API, **Then** the sandbox blocks the request and logs a violation with the attempted URL
-3. **Given** an agent exceeds its memory limit, **When** the limit is reached, **Then** the agent is terminated with an "out of memory" error and the Agent Panel shows "Crashed (OOM)"
+3. **Given** an agent exceeds its memory limit, **When** the limit is reached, **Then** the agent is terminated with an "out of memory" error and the Agent Manager shows "Crashed (OOM)"
 
 ---
 
@@ -80,7 +80,7 @@ Users can develop and run custom agents locally without publishing to the market
 
 **Why this priority**: Local agents enable power users to build custom automation without needing to publish. It also serves as a development workflow for marketplace publishing.
 
-**Independent Test**: Create a custom agent in ~/.osai/agents/my-tools/ with a valid manifest.json. Restart the scheduling system or run "osai scan-agents". Verify the agent appears in the Agent Panel with a "local" badge and can be enabled/configured like any other agent.
+**Independent Test**: Create a custom agent in ~/.osai/agents/my-tools/ with a valid manifest.json. Restart the scheduling system or run "osai scan-agents". Verify the agent appears in the Agent Manager with a "local" badge and can be enabled/configured like any other agent.
 
 **Acceptance Scenarios**:
 
@@ -119,7 +119,7 @@ Users can develop and run custom agents locally without publishing to the market
 - **FR-013**: Rollback to previous version MUST be supported
 - **FR-014**: Local custom agents MUST be supported via a configurable directory (~/.osai/agents/)
 - **FR-015**: Local agents MUST be auto-detected on app start or via `scan-agents` command
-- **FR-016**: Local agents MUST be marked with a "local" badge in the Agent Panel
+- **FR-016**: Local agents MUST be marked with a "local" badge in the Agent Manager
 - **FR-017**: Agent manifests MUST follow a published JSON schema
 - **FR-018**: Agent manifests MUST declare: name, version, description, author, permissions, dependencies, entry point, capabilities
 

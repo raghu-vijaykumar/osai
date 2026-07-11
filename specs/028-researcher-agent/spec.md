@@ -72,11 +72,11 @@ The researcher can compile findings into a structured report. The report include
 
 ### User Story 5 - Scheduled Research (Priority: P3)
 
-Users can schedule research queries to run periodically: "Research AI news every Monday morning." The researcher runs the query, compares results to the previous run, highlights what's new, and delivers a briefing. Scheduled research appears as a recurring task in the agent panel.
+Users can schedule research queries to run periodically: "Research AI news every Monday morning." The researcher runs the query, compares results to the previous run, highlights what's new, and delivers a briefing. Scheduled research appears as a recurring task in the Ask screen (spec 022).
 
 **Why this priority**: Keeping up with fast-moving topics (AI, frameworks, security) is labor-intensive. Scheduled research automates this.
 
-**Independent Test**: Schedule a research task: "Research 'React 19 updates' every Friday at 9 AM." After the first run, verify the results appear as a briefing in the dashboard. After the second run, verify it highlights "new since last check."
+**Independent Test**: Schedule a research task: "Research 'React 19 updates' every Friday at 9 AM." After the first run, verify the results appear as a conversation in the Ask screen. After the second run, verify it highlights "new since last check."
 
 **Acceptance Scenarios**:
 
@@ -112,7 +112,7 @@ Users can schedule research queries to run periodically: "Research AI news every
 - **FR-011**: Reports MUST be savable to the knowledge base
 - **FR-012**: Researcher MUST support scheduled recurring research queries
 - **FR-013**: Scheduled research MUST detect and highlight new results since the previous run
-- **FR-014**: Scheduled research tasks MUST appear in the agent panel
+- **FR-014**: Scheduled research tasks MUST appear in the Ask screen (spec 022) as conversation items
 - **FR-015**: Researcher MUST be available as an MCP tool via the MCP server
 - **FR-016**: Researcher MUST show progress/status during long-running queries
 - **FR-017**: Researcher MUST respect rate limits for external APIs
@@ -144,7 +144,7 @@ Users can schedule research queries to run periodically: "Research AI news every
 - Knowledge base search uses the existing storage/search layer
 - Context augmentation uses the current session/project/entity data from the knowledge engine
 - Research sessions are persisted for up to 30 days, then auto-archived
-- Reports use an LLM for narrative generation (local or cloud)
+- Reports use an LLM for narrative generation via the centralized provider layer (spec 062) — supports local and remote backends
 - Scheduled research uses the agent scheduling system (spec 031)
 - Rate limiting uses a token bucket algorithm per source
 - Source code lives at `agents/researcher/` in the monorepo

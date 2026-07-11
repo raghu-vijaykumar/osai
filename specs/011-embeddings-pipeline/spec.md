@@ -138,6 +138,6 @@ The pipeline handles model downloading, caching, and loading/unloading. Models a
 - Input text > 512 tokens is truncated to the first 512 tokens (most semantic information is in the beginning)
 - Model cache directory: `~/.osai/models/` with subdirectories per model
 - Transformers.js handles model downloading with Hugging Face Hub
-- OpenAI API key is configured by the user in `~/.osai/config.json` if using remote models
+- Remote embedding provider credentials (e.g., OpenAI API key) are managed by the provider layer (spec 062) rather than stored directly in config
 - Embedding vectors are stored as binary Float32 arrays (4 bytes per dimension) for space efficiency
 - Source code lives at `knowledge-engine/embeddings/` in the monorepo

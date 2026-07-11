@@ -116,6 +116,9 @@ The user can configure which applications are tracked, disable title capture for
 - **FR-014**: Monitor MUST handle permissions gracefully — if OS accessibility permissions are denied, publish a `monitor.error` event and retry
 - **FR-015**: Monitor MUST publish `monitor.ready` and `monitor.stopped` lifecycle events
 - **FR-016**: Monitor MUST respect system power state — stop polling during sleep, resume on wake
+- **FR-017**: Monitor MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via in-process IPC — see spec 063. Since the monitor runs in-process, this is a simple flag check before each event publish. On `disable`, stop all polling and drop timers. On `pause`, stop publishing but keep timers running (for idle detection). On `resume`, resume publishing.
+- **FR-018**: Monitor MUST send a heartbeat to the Rust core every 60 seconds via in-process message, containing `events_today`, `last_event_at`, `hidden_app_count`, and any errors — see spec 063 FR-027
+- **FR-019**: Monitor MUST register a `config_schema` at source registration time exposing hidden applications and idle threshold as configurables — see spec 063 FR-014
 
 ### Key Entities
 

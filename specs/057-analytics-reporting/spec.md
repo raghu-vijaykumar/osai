@@ -16,7 +16,7 @@ The analytics dashboard shows organization-wide adoption metrics: active users (
 
 **Why this priority**: Adoption metrics help enterprise admins understand if OSAI is being used across the organization and identify teams that may need additional training or support.
 
-**Independent Test**: Open the Analytics dashboard in the admin panel. Verify it shows: DAU (42), WAU (85), MAU (120) with 7-day trend charts. Adoption rate: 80% (120/150 invited). Feature usage pie chart: Timeline (45%), Search (25%), Dashboard (15%), Agents (10%), Other (5%). Switch to "Growth" tab and verify new user signups per day for the last 30 days.
+**Independent Test**: Open the Analytics dashboard in the admin panel. Verify it shows: DAU (42), WAU (85), MAU (120) with 7-day trend charts. Adoption rate: 80% (120/150 invited). Feature usage pie chart: History (45%), Search (25%), Home (15%), Agents (10%), Other (5%). Switch to "Growth" tab and verify new user signups per day for the last 30 days.
 
 **Acceptance Scenarios**:
 
@@ -100,7 +100,7 @@ All analytics data is accessible via API for integration with external BI tools 
 ### Key Entities
 
 - **AdoptionMetrics**: Organization adoption metrics. Attributes: date, dau, wau, mau, totalUsers, activeUsers, newUsers, churnedUsers, engagementScore.
-- **FeatureUsage**: Feature usage metrics. Attributes: date, feature (timeline/search/dashboard/agents/command-bar/org-graph), userCount, eventCount, totalDuration.
+- **FeatureUsage**: Feature usage metrics. Attributes: date, feature (history/search/home/agents/chat-bar/org-graph), userCount, eventCount, totalDuration.
 - **TeamAnalytics**: Team-level analytics. Attributes: teamId, dateRange, memberCount, activeMembers, topProjects, sharedEventCount, engagementScore.
 - **SavedReport**: A saved report configuration. Attributes: id, orgId, name, metrics (array), dimensions, filters, schedule (cron), recipients (array of emails), lastRunAt, format (pdf/csv).
 

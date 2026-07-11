@@ -86,21 +86,90 @@ The connectors detect the media type (movie, episode, music, podcast) and captur
 ### Functional Requirements
 
 - **FR-001**: Connectors MUST capture media playback events: started, paused, stopped, progress, chapter change
-- **FR-002**: Events MUST include: title, creator/artist, media type, duration, progress, source (mpv/vlc/plex/jellyfin)
-- **FR-003**: VLC connector MUST use VLC's HTTP or RC interface
-- **FR-004**: mpv connector MUST use mpv's JSON IPC interface
-- **FR-005**: Plex connector MUST use Plex Web API (scrobbling)
-- **FR-006**: Jellyfin connector MUST use Jellyfin API
-- **FR-007**: Connectors MUST detect media type: movie, episode, music, podcast, other
-- **FR-008**: Music events MUST include: artist, album, title, genre, track number
-- **FR-009**: Podcast events MUST include: show name, episode title, publisher, publish date
-- **FR-010**: Connectors MUST handle player process termination gracefully
-- **FR-011**: Progress updates MUST be throttled to at most once per 30 seconds
-- **FR-012**: Connectors MUST respect user privacy settings (opt-out for specific players)
+- **FR-002**: Events MUST include: title, creator/artist, media type, duration, progress, source, and player app (e.g., `com.videolan.vlc`)
+- **FR-003**: Each connector MUST communicate with its player via the player's documented IPC or API protocol
+- **FR-004**: Progress updates MUST be throttled to at most once per 30 seconds
+- **FR-005**: Connectors MUST handle player process termination gracefully (process exit, crash, kill)
+- **FR-006**: Connectors MUST detect media type: movie, episode, music, podcast, other
+- **FR-007**: Music events MUST include: artist, album, title, genre, track number
+- **FR-008**: Podcast events MUST include: show name, episode title, publisher, publish date
+- **FR-009**: Connectors MUST respect user privacy settings (opt-out for specific players)
+- **FR-010**: Each connector MUST register as its own source via the Context Protocol and publish events through the `@osai/protocol` SDK over named pipe / Unix socket
+- **FR-011**: Each connector MUST accept control signals (`enable`, `disable`, `pause`, `resume`) from the Rust core via IPC — see spec 063. On `disable`, stop all player polling and drop timers. On `pause`, stop publishing new media events (may buffer last known state). On `resume`, resume polling and publishing.
+- **FR-012**: Each connector MUST send a heartbeat to the Rust core every 60 seconds via IPC, containing `events_today`, `last_event_at`, `players_detected`, and any errors — see spec 063 FR-027
+- **FR-013**: Each connector MAY register a `config_schema` at source registration time exposing its player-specific settings (e.g., VLC port, Plex webhook URL) as configurables — see spec 063 FR-014
+
+### Per-Tool Connector Specifications
+
+#### VLC
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.videolan.vlc` |
+| **Integration method** | VLC HTTP remote control API (built into VLC, no plugin needed) |
+| **Setup** | User enables "Web interface" in VLC settings → Tools > Preferences > Main interfaces > Web. Default port: `8080`. Optional: password. |
+| **API used** | HTTP GET `http://127.0.0.1:8080/requests/status.xml` — returns XML with `state` (playing/paused/stopped), `information` (title, artist, album), `time` (current position seconds), `length` (duration) |
+| **Polling** | Every 5 seconds when VLC process is detected running |
+| **Events published** | `media.played`, `media.paused`, `media.stopped`, `media.progress` |
+| **Process detection** | Scan running processes for `vlc.exe` (Windows), `VLC` (macOS), `vlc` (Linux) |
+| **Complexity** | ~150 lines — HTTP client + XML parser + state machine |
+
+#### mpv
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.mpv.player` |
+| **Integration method** | mpv built-in JSON IPC (`--input-ipc-server=<path>`) — no plugin needed |
+| **Setup** | User adds to `mpv.conf`: `input-ipc-server=/tmp/mpv-socket` (Linux/macOS) or `\\.\pipe\mpv-pipe` (Windows). Or the OSAI installer creates a wrapper script that starts mpv with the flag. |
+| **API used** | JSON command/response over Unix socket or named pipe. Send `{"command": ["get_property", "playback-time"]}`, receive `{"data": 123.45, "error": "success"}`. Properties: `filename`, `metadata` (title, artist, album), `media-title`, `duration`, `playback-time`, `pause`, `chapter`. |
+| **Polling** | Push-based — mpv sends observe_property events. Fallback: poll every 5 seconds. |
+| **Events published** | `media.played`, `media.paused`, `media.stopped`, `media.progress`, `media.chapter` |
+| **Process detection** | Scan for `mpv.exe`/`mpv` process OR connect to the IPC socket |
+| **Complexity** | ~200 lines — JSON socket client + property observer |
+
+#### Plex
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.plex.plex` |
+| **Integration method** | Plex Webhook (sends POST to a configured URL when playback starts/stops) + Plex API polling for progress |
+| **Setup** | User creates a webhook in Plex Settings > Webhooks > Add: `http://127.0.0.1:8400/plex-webhook`. The OSAI media connector runs a tiny HTTP server on port 8400. |
+| **API used** | Webhook payload format: `{"event": "media.play"|"media.pause"|"media.resume"|"media.stop"|"media.scrobble", "Metadata": {"title", "grandparentTitle" (show), "artist", "album", "type" (episode/movie/track), "duration", "guid", "librarySectionType"}}`. API: `GET /library/metadata/{ratingKey}` for current progress polling. |
+| **Polling** | Webhook fires on play/pause/stop events. Status polling every 30 seconds for progress (API via `GET /status/sessions`). |
+| **Events published** | `media.played`, `media.paused`, `media.stopped`, `media.progress` |
+| **Auth** | Plex token from Plex Settings > Your Account > Plex Web > Token. Stored via OS keychain (spec 003 FR-059). |
+| **Complexity** | ~300 lines — HTTP webhook receiver + Plex API client |
+
+#### Jellyfin
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `org.jellyfin.jellyfin` |
+| **Integration method** | Jellyfin Webhook plugin (community plugin) + Jellyfin API polling |
+| **Setup** | User installs Jellyfin Webhook plugin, creates a webhook pointing to `http://127.0.0.1:8400/jellyfin-webhook` |
+| **API used** | Webhook JSON payload with `NotificationType` (PlaybackStart/PlaybackStop/PlaybackProgress) and `Item` (Name, SeriesName, Artists, Album, Type, RunTimeTicks). API: `GET /Users/{userId}/Items/{itemId}` for metadata, `GET /Sessions` for active sessions. |
+| **Polling** | Webhook + status polling every 30 seconds via `/Sessions` endpoint |
+| **Events published** | `media.played`, `media.paused`, `media.stopped`, `media.progress` |
+| **Auth** | Jellyfin API key from Dashboard > API Keys. Stored via OS keychain. |
+| **Complexity** | ~300 lines — HTTP webhook receiver + Jellyfin API client |
+
+#### Spotify
+
+| Property | Detail |
+|----------|--------|
+| **App ID** | `com.spotify.client` |
+| **Integration method** | Spotify Web API `currently-playing` endpoint |
+| **Setup** | User authorizes via OAuth — the OSAI desktop app opens a Spotify OAuth flow, gets a refresh token. The token is stored in the OS keychain. |
+| **API used** | `GET https://api.spotify.com/v1/me/player/currently-playing` — returns `item` (name, artists, album, duration_ms), `progress_ms`, `is_playing`, `currently_playing_type` (track/episode/ad). |
+| **Polling** | Every 10 seconds. Ad segments (type=ad) are filtered out. |
+| **Events published** | `media.played`, `media.paused`, `media.stopped`, `media.progress` |
+| **Auth** | OAuth 2.0 with refresh token. Scopes: `user-read-playback-state`, `user-read-currently-playing`. |
+| **Limitations** | Spotify API only returns current playback state — no chapter support, no local file playback, no history for offline periods. |
+| **Complexity** | ~250 lines — OAuth token manager + REST API poller |
 
 ### Key Entities
 
-- **MediaEvent**: A media playback event. Attributes: id, type (media.played/media.paused/media.stopped/media.progress/media.chapter), source (mpv/vlc/plex/jellyfin), title, creator, album, duration, progress, mediaType (movie/episode/music/podcast), url, chapter.
+- **MediaEvent**: A media playback event. Attributes: id, type (media.played/media.paused/media.stopped/media.progress/media.chapter), source (com.videolan.vlc/com.mpv.player/com.plex.plex/org.jellyfin.jellyfin/com.spotify.client), title, creator, album, duration, progress, mediaType (movie/episode/music/podcast), url, chapter.
 - **MediaSession**: A continuous media playback session. Attributes: id, source, mediaId, title, mediaType, startedAt, lastProgressAt, totalPlayedDuration, events (related event IDs).
 
 ## Success Criteria
@@ -114,12 +183,10 @@ The connectors detect the media type (movie, episode, music, podcast) and captur
 
 ## Assumptions
 
-- VLC connector uses VLC's HTTP interface (port 8080 by default) or RC interface
-- mpv connector uses mpv's JSON IPC (`--input-ipc-server`)
-- Plex connector uses Plex's Web API (requires Plex token)
-- Jellyfin connector uses Jellyfin's API (requires API key)
-- Plex/Jellyfin connectors poll the server API every 30 seconds
-- Local connectors (mpv/VLC) are event-driven via IPC
-- Media type detection uses file extension, MIME type, and metadata tags
-- Privacy: users can configure which players to monitor
+- All connectors run as part of a single Node.js sidecar process (`connectors/media/`)
+- The sidecar connects to the Rust core via `@osai/protocol` SDK over named pipe / Unix socket
+- VLC HTTP interface must be enabled by user (single checkbox in VLC settings). OSAI installer can automate this on first run by writing to VLC's config file (`vlcrc`: `http-host=127.0.0.1`, `http-port=8080`).
+- mpv IPC socket is configured by the OSAI installer via a wrapper script or `mpv.conf` drop-in (`input-ipc-server=/tmp/mpv-socket`)
+- Plex/Jellyfin webhooks point to a local HTTP server on port 8400 that the media connector sidecar runs
+- All cloud credentials (Plex token, Jellyfin API key, Spotify refresh token) are stored in the OS keychain — see spec 003 FR-059
 - Source code lives at `connectors/media/` in the monorepo, one subdirectory per player

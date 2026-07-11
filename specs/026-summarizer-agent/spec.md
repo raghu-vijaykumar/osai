@@ -12,7 +12,7 @@
 
 ### User Story 1 - Daily Activity Summary (Priority: P1)
 
-The summarizer agent automatically generates a daily summary at the end of each day (configurable time, default 9 PM). The summary includes: total events captured, active time, top apps and projects, key topics and entities, notable sessions, and an AI-written narrative paragraph connecting the day's work. The summary appears in the dashboard and is also available via the MCP API.
+The summarizer agent automatically generates a daily summary at the end of each day (configurable time, default 9 PM). The summary includes: total events captured, active time, top apps and topics, key topics and entities, notable sessions, and an AI-written narrative paragraph connecting the day's work. The summary appears on the Home screen and is also available via the MCP API.
 
 **Why this priority**: Daily summaries are the core feature. Users get a birds-eye view of their day without manually reviewing the timeline.
 
@@ -21,7 +21,7 @@ The summarizer agent automatically generates a daily summary at the end of each 
 **Acceptance Scenarios**:
 
 1. **Given** capture has been running all day, **When** the scheduled summary time is reached, **Then** a daily summary is generated and stored within 30 seconds
-2. **Given** a daily summary exists, **When** the user opens the dashboard, **Then** the summary is displayed at the top with a calendar icon and "Today's Summary" header
+2. **Given** a daily summary exists, **When** the user opens Home, **Then** the summary is displayed at the top with a calendar icon and "Today's Summary" header
 3. **Given** the user wants to see a specific day, **When** navigating to a past date, **Then** that day's summary is displayed (or "No summary available" if capture wasn't running)
 
 ---
@@ -76,7 +76,7 @@ Users can request summaries for arbitrary time ranges: "summarize last 3 hours",
 
 Summaries can be delivered via notification (system tray, email, webhook). Users configure when and how they receive summaries. The agent supports: push notification (in-app), system notification (OS), scheduled email, and webhook POST to a custom URL.
 
-**Why this priority**: Automated delivery ensures users actually see their summaries without manually checking the dashboard.
+**Why this priority**: Automated delivery ensures users actually see their summaries without manually checking Home.
 
 **Independent Test**: Configure daily summary delivery to "system notification at 9 PM". At 9 PM, verify a system notification appears with the summary title and key stats (e.g., "Today's Summary: 4h 32m active, 3 projects, 1,247 events").
 
@@ -138,7 +138,7 @@ Summaries can be delivered via notification (system tray, email, webhook). Users
 
 - Built as an OSAI agent running in the background process
 - Uses the knowledge engine for event aggregation and entity extraction (specs 011-017)
-- Uses an LLM (local via Ollama/llama.cpp or cloud API) for narrative generation
+- Uses an LLM for narrative generation via the centralized provider layer (spec 062) — supports local (Ollama, Transformers.js) and remote (OpenAI, Anthropic) backends
 - Summaries stored in the local storage layer (SQLite) via the storage package
 - Scheduled via the agent scheduling system (spec 031)
 - Config stored in user preferences (localStorage or config file)

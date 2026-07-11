@@ -20,7 +20,7 @@ Each agent has a permission manifest declaring what it needs to access: event ty
 
 **Acceptance Scenarios**:
 
-1. **Given** the Researcher agent's permission manifest, **When** the user views it in the Agent Panel, **Then** permissions are grouped by category (Read, Write, External, System) with toggle switches
+1. **Given** the Researcher agent's permission manifest, **When** the user views it in Settings > Agent Manager, **Then** permissions are grouped by category (Read, Write, External, System) with toggle switches
 2. **Given** a permission is revoked, **When** the agent attempts an operation requiring that permission, **Then** the operation is blocked and a "Permission denied" event is logged
 
 ---
@@ -43,7 +43,7 @@ When an agent needs a permission it doesn't have (e.g., first time accessing a n
 
 ### User Story 3 - Data Access Audit Log (Priority: P2)
 
-Every agent data access (read or write) is logged: which agent, what resource, when, and whether it was allowed or denied. Users can view the audit log in the Agent Panel, filter by agent, resource type, and date range. The log is append-only and cannot be tampered with by agents.
+Every agent data access (read or write) is logged: which agent, what resource, when, and whether it was allowed or denied. Users can view the audit log in Settings > Agent Manager, filter by agent, resource type, and date range. The log is append-only and cannot be tampered with by agents.
 
 **Why this priority**: Audit logs provide transparency and accountability. Users can see exactly what agents are doing with their data.
 
