@@ -8,20 +8,24 @@
 
 **Input**: User description: "Define the Context Protocol schema, event envelope, publish/consume APIs, and initial SDK package"
 
+The Context Protocol is application-agnostic. Any connector, service, or application can define its own event types. The examples below use `url.visited` (browser) and `file.modified` (file watcher) for illustration.
+
+The formal protocol specification lives at `protocol/context-protocol.md` and is the authoritative reference for the event envelope, all core event types, schemas, validation rules, and transport details.
+
 ## User Scenarios & Testing
 
 ### User Story 1 - Publish a Context Event (Priority: P1)
 
-A connector (e.g., browser extension) captures a user action and publishes it as a typed event to the local context store. The event is validated against its schema, persisted, and immediately queryable.
+A connector (e.g., browser extension, file watcher, IDE plugin) captures a user action and publishes it as a typed event to the local context store. The event is validated against its schema, persisted, and immediately queryable.
 
 **Why this priority**: Publishing is the fundamental operation. Without it, there is no context to consume.
 
-**Independent Test**: A CLI tool can submit a `url.visited` event and verify it appears in the local event log.
+**Independent Test**: A CLI tool can submit an event of type `url.visited` and verify it appears in the local event log.
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid event payload matching the `url.visited` schema, **When** published via the SDK's `publish()` method, **Then** the event is stored and returns a unique event ID
-2. **Given** an event payload missing required fields, **When** published, **Then** the SDK returns a validation error with details of missing fields
+1. **Given** a valid event payload matching a registered event type schema (e.g., `url.visited`), **When** published via the SDK's `publish()` method, **Then** the event is stored and returns a unique event ID
+2. **Given** an event payload missing required fields for its type, **When** published, **Then** the SDK returns a validation error with details of missing fields
 3. **Given** an event from an unauthorized source, **When** published, **Then** the SDK rejects with a permission error
 
 ---
@@ -52,7 +56,7 @@ Each event type has a defined JSON Schema that validates payload shape, required
 
 **Acceptance Scenarios**:
 
-1. **Given** a `url.visited` schema requiring `url` (string) and `title` (string), **When** validating `{ url: "https://example.com", title: "Example" }`, **Then** validation passes
+1. **Given** a schema for event type `url.visited` requiring `url` (string) and `title` (string), **When** validating `{ url: "https://example.com", title: "Example" }`, **Then** validation passes
 2. **Given** the same schema, **When** validating `{ url: 123 }`, **Then** validation fails with a type mismatch error
 
 ---
@@ -100,7 +104,7 @@ Events can be grouped into sessions — contiguous periods of related activity (
 
 ### Functional Requirements
 
-- **FR-001**: System MUST define a typed `ContextEvent` envelope with fields: `id`, `source`, `type`, `timestamp`, `payload`, and optional `project` and `session`
+- **FR-001**: System MUST define a typed `ContextEvent` envelope with fields: `protocol_version` (semver), `id` (UUID v7), `source`, `type`, `timestamp`, `payload`, and optional `project` and `session`
 - **FR-002**: System MUST support registering event type schemas as JSON Schema (Draft 2020-12)
 - **FR-003**: System MUST validate every published event against its registered schema before storage
 - **FR-004**: System MUST provide a `publish(event)` SDK method that accepts a `ContextEvent` and returns the generated `id`
@@ -116,9 +120,15 @@ Events can be grouped into sessions — contiguous periods of related activity (
 - **FR-014**: System MUST expose a `registerSchema(type, schema)` method to add event type schemas
 - **FR-015**: System MUST expose a `getSchema(type)` method to retrieve a registered schema
 
+#### Protocol Versioning
+
+- **FR-016**: The SDK MUST set `protocol_version` on every event at publish time — defaults to the current protocol version (`1.0.0`)
+- **FR-017**: Consumers MUST check `protocol_version` on received events and reject events with a MAJOR version higher than they support, returning error code `UNSUPPORTED_PROTOCOL_VERSION`
+- **FR-018**: The SDK MUST expose a `getProtocolVersion()` method returning the supported protocol version string
+
 ### Key Entities
 
-- **ContextEvent**: The core event envelope. Attributes: `id` (UUID v7), `source` (string identifier), `type` (string, dot-notation), `timestamp` (ISO 8601), `payload` (Record), `project` (optional string), `session` (optional string)
+- **ContextEvent**: The core event envelope. Attributes: `protocol_version` (semver), `id` (UUID v7), `source` (string identifier), `type` (string, dot-notation), `timestamp` (ISO 8601), `payload` (Record), `project` (optional string), `session` (optional string)
 - **EventSchema**: A JSON Schema (Draft 2020-12) registered for a specific event type. Attributes: `type` (string), `schema` (JSON Schema object), `version` (semver)
 - **Source**: An application/connector that publishes events. Attributes: `id` (string), `name` (string), `permissions` (array of allowed event types)
 - **Permission**: Grants a source the ability to publish specific event types. Attributes: `sourceId`, `eventType` (glob pattern), `grantedAt`
@@ -135,11 +145,13 @@ Events can be grouped into sessions — contiguous periods of related activity (
 
 ## Assumptions
 
+- The formal protocol specification is at `protocol/context-protocol.md` — this feature spec implements that specification
 - The initial implementation targets Node.js 20+ and browser environments (via bundling)
 - Storage is local SQLite via `rusqlite` in the Tauri Rust core, or via `better-sqlite3` for Node.js sidecars (knowledge engine, MCP server). Browser environments use an in-memory fallback.
 - Event types use reverse-domain dot notation (e.g., `osai.url.visited`)
 - All timestamps are UTC ISO 8601 strings
-- The protocol will support optional fields for forward compatibility
+- Protocol version follows semver. Current version is `1.0.0`. Breaking changes (field removals, required field additions) increment the MAJOR version.
+- The protocol supports optional fields for forward compatibility — consumers MUST ignore unknown fields
 - Permissions stored in a local JSON file initially; database-backed later
 - No network transport is needed in Phase 0 — publish/consume is local-only
 - Schema registry is in-memory on first pass, persisted to storage later
